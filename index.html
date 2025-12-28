@@ -62,7 +62,7 @@
             transform: translateY(0);
         }
 
-        /* Imagem de perfil integrada */
+        /* Imagem de perfil integrada (Sem caixa) */
         .portrait-mask {
             mask-image: linear-gradient(to bottom, black 80%, transparent 100%);
             -webkit-mask-image: linear-gradient(to bottom, black 80%, transparent 100%);
@@ -153,7 +153,7 @@
             </div>
 
             <div class="flex items-center gap-4">
-                <div class="text-[10px] font-bold opacity-30 tracking-tighter hidden sm:block">ISTEC.ENG</div>
+                <div class="text-[10px] font-bold opacity-30 tracking-tighter hidden sm:block italic">ISTEC.ENG</div>
                 <div class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
             </div>
         </nav>
@@ -238,7 +238,7 @@
                 <div class="grid md:grid-cols-2 items-stretch">
                     <div class="aspect-video md:aspect-auto bg-zinc-900 overflow-hidden">
                         <img src="https://images.unsplash.com/photo-1551334787-21e6bd3ab135?q=80&w=1000&auto=format&fit=crop" 
-                             alt="[Conteúdo Social Media Global]" 
+                             alt="[Conteúdo Redes Sociais Global]" 
                              class="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-1000 group-hover:scale-105 opacity-60">
                     </div>
                     <div class="p-12 flex flex-col justify-center">
@@ -265,11 +265,11 @@
                 <div class="reveal module-card p-1 group">
                     <div class="aspect-[16/10] bg-zinc-900 overflow-hidden mb-8">
                          <img src="https://images.unsplash.com/photo-1633356122544-f134324a6cee?q=80&w=1000&auto=format&fit=crop" 
-                             alt="[Modelação 3D AR]" 
+                             alt="[Modelação 3D para RA]" 
                              class="w-full h-full object-cover grayscale opacity-40 group-hover:opacity-100 transition-all duration-700">
                     </div>
                     <div class="px-8 pb-8">
-                        <h4 class="text-xl font-bold mb-2">3D AR Experiences</h4>
+                        <h4 class="text-xl font-bold mb-2 italic">3D AR Experiences</h4>
                         <p class="text-zinc-500 text-xs leading-relaxed">Modelação de ativos em Blender otimizados para integração direta em experiências de Realidade Aumentada.</p>
                     </div>
                 </div>
@@ -280,7 +280,7 @@
                              class="w-full h-full object-cover grayscale opacity-40 group-hover:opacity-100 transition-all duration-700">
                     </div>
                     <div class="px-8 pb-8">
-                        <h4 class="text-xl font-bold mb-2">Campaign Newsletters</h4>
+                        <h4 class="text-xl font-bold mb-2 italic">Campaign Newsletters</h4>
                         <p class="text-zinc-500 text-xs leading-relaxed">Design e layout de email marketing premium desenvolvidos em Illustrator para máxima eficácia visual.</p>
                     </div>
                 </div>
@@ -309,43 +309,45 @@
                     <!-- YDigital -->
                     <div class="reveal border-l-2 border-white pl-8 py-2">
                         <p class="text-[9px] font-bold text-zinc-600 uppercase mb-2">Cargo Atual</p>
-                        <h4 class="text-xl font-bold">Multimedia & AR Specialist</h4>
-                        <p class="text-xs text-zinc-400 mt-1 uppercase tracking-widest">YDigital Media | Abr 2025 — Presente</p>
+                        <h4 class="text-xl font-bold tracking-tighter">Multimedia & AR Specialist</h4>
+                        <p class="text-xs text-zinc-400 mt-1 uppercase tracking-widest italic">YDigital Media | Abr 2025 — Presente</p>
                         <ul class="mt-4 space-y-2 text-zinc-500 text-xs leading-relaxed">
                             <li>> Criação de posts estáticos (PS/AI) para EUA, PT, BR e África do Sul.</li>
                             <li>> Desenvolvimento de Reels dinâmicos em After Effects.</li>
                             <li>> Modelação 3D em Blender para integração em Realidade Aumentada.</li>
+                            <li>> Design de campanhas de newsletters em Illustrator.</li>
                         </ul>
                     </div>
                     <!-- GCIMedia -->
                     <div class="reveal border-l-2 border-zinc-800 pl-8 py-2">
-                        <h4 class="text-lg font-bold text-zinc-300">Graphic Designer - Estágio</h4>
-                        <p class="text-xs text-zinc-600 mt-1 uppercase tracking-widest">GCIMedia Group | 2024</p>
-                        <p class="mt-3 text-zinc-500 text-xs">Foco em campanhas publicitárias, WebDesign, produção gráfica e packaging.</p>
+                        <h4 class="text-lg font-bold text-zinc-300 tracking-tighter">Graphic Designer - Estágio</h4>
+                        <p class="text-xs text-zinc-600 mt-1 uppercase tracking-widest italic">GCIMedia Group | 2024</p>
+                        <p class="mt-3 text-zinc-500 text-xs leading-relaxed">Foco em campanhas publicitárias, WebDesign, produção gráfica e packaging.</p>
                     </div>
                     <!-- Fotografia -->
                     <div class="reveal border-l-2 border-zinc-800 pl-8 py-2">
-                        <h4 class="text-lg font-bold text-zinc-300">Freelance Photographer</h4>
-                        <p class="text-xs text-zinc-600 mt-1 uppercase tracking-widest">Alexandre Cosme Fotografia | 2022 — Presente</p>
-                        <p class="mt-3 text-zinc-500 text-xs">Especializado em eventos desportivos e sessões privadas de alta qualidade.</p>
+                        <h4 class="text-lg font-bold text-zinc-300 tracking-tighter">Freelance Photographer</h4>
+                        <p class="text-xs text-zinc-600 mt-1 uppercase tracking-widest italic">Alexandre Cosme Fotografia | 2022 — Presente</p>
+                        <p class="mt-3 text-zinc-500 text-xs leading-relaxed">Especializado em eventos desportivos e sessões privadas de alta qualidade.</p>
                     </div>
                 </div>
             </div>
 
-            <!-- Tua Imagem de Perfil -->
+            <!-- Imagem de Perfil Fundida no Fundo -->
             <div class="md:col-span-5 reveal sticky top-32">
                 <div class="relative group">
+                    <!-- Lembra-te de trocar este link pela tua foto real -->
                     <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=1000&auto=format&fit=crop" 
                          alt="Alexandre Cosme" 
                          class="portrait-mask w-full">
                     <div class="absolute inset-0 bg-gradient-to-r from-transparent to-black/30 pointer-events-none"></div>
                 </div>
                 
-                <div class="mt-12 p-8 border border-zinc-900 bg-zinc-900/10 rounded-xl">
-                    <h5 class="text-[9px] font-bold uppercase tracking-[0.4em] text-zinc-700 mb-6">Formação & Certificações</h5>
+                <div class="mt-12 p-8 border border-zinc-900 bg-zinc-900/10 rounded-2xl">
+                    <h5 class="text-[9px] font-bold uppercase tracking-[0.4em] text-zinc-700 mb-6 italic">Formação Académica</h5>
                     <div class="space-y-4">
                         <div>
-                            <p class="text-xs font-bold">Engenharia Multimédia</p>
+                            <p class="text-sm font-bold tracking-tight">Licenciatura em Engenharia Multimédia</p>
                             <p class="text-[10px] text-zinc-500">ISTEC • 2024</p>
                         </div>
                         <div class="flex flex-wrap gap-2 pt-2">
@@ -362,13 +364,13 @@
     <!-- Footer / Contacto -->
     <footer id="contacto" class="max-w-7xl mx-auto px-8 py-40 border-t border-zinc-900">
         <div class="grid md:grid-cols-2 gap-20">
-            <div class="reveal">
+            <div class="reveal text-left">
                 <span class="section-number">04 / CONTACTO</span>
                 <h2 class="text-7xl font-bold tracking-tighter leading-none mb-16 underline underline-offset-[16px] decoration-zinc-800">CONNECT.</h2>
                 <div class="space-y-6">
-                    <a href="mailto:alexandrexbdcosme@gmail.com" class="text-xl md:text-3xl font-light hover:text-zinc-500 transition block w-fit">alexandrexbdcosme@gmail.com</a>
-                    <p class="text-[10px] font-bold text-zinc-600 uppercase tracking-widest">Ribamar, Ericeira • Lisboa, PT</p>
-                    <p class="text-sm font-bold tracking-tighter">(+351) 933 059 987</p>
+                    <a href="mailto:alexandrexbdcosme@gmail.com" class="text-xl md:text-3xl font-light hover:text-zinc-500 transition block w-fit border-b border-zinc-900 pb-2">alexandrexbdcosme@gmail.com</a>
+                    <p class="text-[10px] font-bold text-zinc-600 uppercase tracking-widest italic">Ribamar, Ericeira • Lisboa, PT</p>
+                    <p class="text-sm font-bold tracking-tighter opacity-80">(+351) 933 059 987</p>
                 </div>
             </div>
             <div class="flex flex-col md:items-end justify-end reveal">
@@ -378,7 +380,7 @@
                     <a href="#" class="hover:text-white transition">GitHub</a>
                 </div>
                 <div class="text-right opacity-30">
-                    <p class="text-[9px] uppercase tracking-[0.5em]">Engineering Visual Excellence</p>
+                    <p class="text-[9px] uppercase tracking-[0.5em] italic">Engineering Visual Immersive Excellence</p>
                     <p class="text-[8px] uppercase tracking-[0.3em] mt-2">© 2024 Alexandre Cosme</p>
                 </div>
             </div>
@@ -386,10 +388,10 @@
     </footer>
 
     <script>
-        // Inicializar Icones
+        // Inicializar Icones Lucide
         lucide.createIcons();
 
-        // Reveal no Scroll
+        // Reveal no Scroll (Observer)
         const observer = new IntersectionObserver((entries) => {
             entries.forEach(entry => {
                 if (entry.isIntersecting) {
@@ -400,7 +402,7 @@
 
         document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
 
-        // Progresso do Scroll
+        // Progresso do Scroll no topo
         window.addEventListener('scroll', () => {
             const winScroll = document.body.scrollTop || document.documentElement.scrollTop;
             const height = document.documentElement.scrollHeight - document.documentElement.clientHeight;
