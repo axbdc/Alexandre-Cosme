@@ -1,11 +1,13 @@
 <!DOCTYPE html>
-<html lang="pt">
+<html lang="pt" class="scroll-smooth">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Alexandre Cosme | Multimedia & AR Engineer</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Three.js para o motor 3D -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Space+Grotesk:wght@300;500;700&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -14,32 +16,79 @@
             --border: rgba(255, 255, 255, 0.08);
         }
 
+        html { scroll-behavior: smooth; }
+
         body {
             font-family: 'Inter', sans-serif;
             background-color: var(--bg);
             color: #ffffff;
             margin: 0;
             overflow-x: hidden;
+            overflow-y: hidden; 
         }
 
-        h1, h2, h3, .font-heading {
+        /* --- PRELOADER --- */
+        #preloader {
+            position: fixed;
+            inset: 0;
+            background: #030303;
+            z-index: 10000;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            transition: opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1), visibility 0.8s;
+        }
+
+        .loader-content { width: 260px; text-align: center; }
+        .loader-name {
             font-family: 'Space Grotesk', sans-serif;
+            font-weight: 700;
+            letter-spacing: 0.4em;
             text-transform: uppercase;
+            font-size: 12px;
+            margin-bottom: 20px;
+            color: #fff;
         }
 
-        /* Efeito de ruído para textura premium */
+        .loader-bar-bg { width: 100%; height: 1px; background: rgba(255, 255, 255, 0.05); position: relative; }
+        .loader-bar-fill {
+            position: absolute;
+            top: 0; left: 0;
+            height: 100%;
+            width: 0%;
+            background: #fff;
+            transition: width 0.2s ease-out;
+        }
+
+        .loader-percentage {
+            font-family: 'Inter', sans-serif;
+            font-size: 9px;
+            font-weight: 500;
+            color: #444;
+            margin-top: 10px;
+            letter-spacing: 0.1em;
+        }
+
+        .preloader-hidden { opacity: 0; visibility: hidden; pointer-events: none; }
+
+        /* --- EFEITO FADE-IN SITE --- */
+        #main-wrapper { opacity: 0; transition: opacity 1.2s ease-in-out; }
+        .content-loaded #main-wrapper { opacity: 1; }
+
+        /* --- ESTILOS GERAIS --- */
+        section { scroll-margin-top: 100px; }
+        h1, h2, h3 { font-family: 'Space Grotesk', sans-serif; text-transform: uppercase; }
+
         .noise {
             position: fixed;
             inset: 0;
-            width: 100%;
-            height: 100%;
-            opacity: 0.02;
-            z-index: 50;
+            width: 100%; height: 100%;
+            opacity: 0.02; z-index: 50;
             pointer-events: none;
             background-image: url('https://grainy-gradients.vercel.app/noise.svg');
         }
 
-        /* Grelha de fundo técnica */
         .bg-grid {
             position: fixed;
             inset: 0;
@@ -50,40 +99,61 @@
             mask-image: radial-gradient(circle at 50% 50%, black, transparent);
         }
 
-        /* Animações de revelação */
         .reveal {
             opacity: 0;
-            transform: translateY(30px);
-            transition: all 1s cubic-bezier(0.16, 1, 0.3, 1);
+            transform: translateY(20px);
+            transition: all 0.8s cubic-bezier(0.16, 1, 0.3, 1);
         }
 
-        .reveal.active {
-            opacity: 1;
-            transform: translateY(0);
-        }
+        .reveal.active { opacity: 1; transform: translateY(0); }
 
-        /* Imagem de perfil integrada (Sem caixa) */
         .portrait-mask {
-            mask-image: linear-gradient(to bottom, black 80%, transparent 100%);
-            -webkit-mask-image: linear-gradient(to bottom, black 80%, transparent 100%);
+            mask-image: linear-gradient(to bottom, black 85%, transparent 100%);
+            -webkit-mask-image: linear-gradient(to bottom, black 85%, transparent 100%);
             filter: grayscale(1) contrast(1.1);
             transition: all 0.6s ease;
         }
 
-        .portrait-mask:hover {
-            filter: grayscale(0) contrast(1);
-        }
+        .portrait-mask:hover { filter: grayscale(0) contrast(1.1); }
 
-        .module-card {
+        .expertise-card {
             border: 1px solid var(--border);
             background: rgba(255, 255, 255, 0.01);
-            transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+            transition: all 0.4s cubic-bezier(0.25, 1, 0.5, 1);
         }
 
-        .module-card:hover {
-            border-color: rgba(255, 255, 255, 0.2);
-            background: rgba(255, 255, 255, 0.03);
-            transform: translateY(-5px);
+        .expertise-card:hover {
+            transform: translateY(-8px);
+            border-color: rgba(255, 255, 255, 0.3);
+            background: rgba(255, 255, 255, 0.04);
+        }
+
+        .tool-tag {
+            font-size: 8px;
+            font-weight: 700;
+            padding: 4px 10px;
+            border: 1px solid var(--border);
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: #999;
+        }
+
+        .nav-blur-box {
+            background: rgba(10, 10, 10, 0.6);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        #canvas-container {
+            width: 100%; height: 100%;
+            min-height: 400px;
+            position: relative;
+            cursor: grab;
+            border: 1px solid var(--border);
+            background: radial-gradient(circle at center, #111 0%, #030303 100%);
+            border-radius: 1rem;
+            overflow: hidden;
         }
 
         #scroll-progress {
@@ -95,320 +165,447 @@
             width: 0%;
         }
 
-        .section-number {
-            font-size: 10px;
-            font-weight: 700;
-            color: #555;
-            letter-spacing: 0.3em;
-            margin-bottom: 1.5rem;
-            display: flex;
-            align-items: center;
-            gap: 1rem;
+        /* --- MARQUEE --- */
+        .marquee {
+            width: 100%;
+            overflow: hidden;
+            white-space: nowrap;
+            background: rgba(255,255,255,0.02);
+            padding: 20px 0;
+            border-top: 1px solid var(--border);
+            border-bottom: 1px solid var(--border);
         }
 
-        .section-number::after {
-            content: "";
-            height: 1px;
-            flex-grow: 1;
-            background: var(--border);
+        .marquee-content {
+            display: inline-block;
+            animation: marquee 30s linear infinite;
         }
 
-        .tool-tag {
-            font-size: 9px;
+        .marquee-item {
+            display: inline-block;
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 14px;
             font-weight: 700;
-            padding: 4px 10px;
-            border: 1px solid var(--border);
             text-transform: uppercase;
-            letter-spacing: 0.1em;
-            color: #777;
+            letter-spacing: 0.3em;
+            padding: 0 40px;
+            color: #444;
         }
 
-        /* Estilo da caixa de navegação com blur */
-        .nav-blur-box {
-            background: rgba(10, 10, 10, 0.6);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
+        @keyframes marquee {
+            0% { transform: translateX(0); }
+            100% { transform: translateX(-50%); }
+        }
+
+        /* --- CTA ANIMATION --- */
+        .cta-big-text-container {
+            display: inline-block;
+            cursor: pointer;
+        }
+
+        .cta-big-text {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: clamp(2rem, 6vw, 5rem);
+            font-weight: 700;
+            line-height: 1.1;
+            text-transform: uppercase;
+            letter-spacing: -0.02em;
+            transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+            -webkit-text-stroke: 1px rgba(255, 255, 255, 0.1);
+            color: transparent;
+        }
+
+        .cta-big-text-container:hover .cta-big-text {
+            -webkit-text-stroke: 1px rgba(255, 255, 255, 1);
+            color: white;
+            transform: scale(1.02);
+        }
+
+        .social-link {
+            transition: all 0.3s ease;
+            color: #555;
+        }
+        .social-link:hover {
+            color: #fff;
+            transform: translateY(-3px);
         }
     </style>
 </head>
 <body class="selection:bg-white selection:text-black">
 
-    <div class="noise"></div>
-    <div class="bg-grid"></div>
-    <div id="scroll-progress"></div>
-
-    <!-- Navegação com Caixa em Blur -->
-    <header class="fixed top-0 w-full z-50 p-6 md:p-8">
-        <nav class="max-w-7xl mx-auto nav-blur-box rounded-2xl px-6 py-4 md:px-10 flex justify-between items-center transition-all duration-500">
-            <div class="text-xl font-bold tracking-tighter uppercase italic">
-                ALEXANDRE<span class="text-zinc-500">.COSME</span>
+    <!-- Preloader -->
+    <div id="preloader">
+        <div class="loader-content">
+            <div class="loader-name">Alexandre Cosme</div>
+            <div class="loader-bar-bg">
+                <div class="loader-bar-fill" id="loaderFill"></div>
             </div>
-            
-            <div class="hidden md:flex gap-10 text-[10px] font-bold uppercase tracking-[0.3em]">
-                <a href="#expertise" class="hover:text-zinc-400 transition">Expertise</a>
-                <a href="#projetos" class="hover:text-zinc-400 transition">Trabalho</a>
-                <a href="#sobre" class="hover:text-zinc-400 transition">Perfil</a>
-                <a href="#contacto" class="hover:text-zinc-400 transition">Contacto</a>
-            </div>
-
-            <div class="flex items-center gap-4">
-                <div class="text-[10px] font-bold opacity-30 tracking-tighter hidden sm:block italic">ISTEC.ENG</div>
-                <div class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
-            </div>
-        </nav>
-    </header>
-
-    <!-- Hero Section -->
-    <section id="home" class="min-h-screen flex flex-col justify-center px-8 md:px-24 pt-20">
-        <div class="max-w-6xl reveal">
-            <span class="text-[10px] font-bold tracking-[0.6em] text-zinc-500 uppercase mb-8 block italic">Multimedia & AR Specialist // ISTEC Graduate</span>
-            <h1 class="text-5xl md:text-[120px] font-bold tracking-tighter leading-[0.85] mb-10">
-                MULTIMEDIA <br> <span class="text-zinc-500 italic font-light">ENGINEERING.</span>
-            </h1>
-            <div class="grid md:grid-cols-2 gap-16 items-end">
-                <p class="text-zinc-500 text-base md:text-lg font-medium leading-relaxed max-w-lg">
-                    Fusão estratégica entre design visual e rigor tecnológico. Aos 22 anos, foco-me na criação de conteúdos dinâmicos e experiências interativas de Realidade Aumentada.
-                </p>
-                <div class="flex flex-col items-end gap-4 text-right">
-                    <p class="text-[10px] font-bold uppercase tracking-widest text-zinc-700">Atualmente @ YDigital Media</p>
-                    <a href="#projetos" class="group flex items-center gap-4 text-xs font-bold uppercase tracking-widest border-b border-zinc-800 pb-2 hover:border-white transition-all">
-                        Explorar Portfólio <i data-lucide="arrow-right" size="14" class="group-hover:translate-x-1 transition-transform"></i>
-                    </a>
-                </div>
-            </div>
+            <div class="loader-percentage" id="loaderPerc">0%</div>
         </div>
-    </section>
+    </div>
 
-    <!-- Secção 01: Expertise Técnica -->
-    <section id="expertise" class="max-w-7xl mx-auto px-8 py-32">
-        <span class="section-number">01 / CAPACIDADES TÉCNICAS</span>
-        <div class="grid md:grid-cols-3 gap-1">
-            <div class="module-card p-12 reveal">
-                <p class="text-zinc-700 font-bold mb-8 text-xs">01.01</p>
-                <h3 class="text-2xl font-bold mb-6">Creative <br>Content</h3>
-                <p class="text-zinc-500 text-sm leading-relaxed mb-8">
-                    Criação de posts estáticos e motion graphics (Reels) para mercados globais como EUA, Brasil e África do Sul.
-                </p>
-                <div class="flex flex-wrap gap-2">
-                    <span class="tool-tag">Photoshop</span>
-                    <span class="tool-tag">After Effects</span>
-                    <span class="tool-tag">Illustrator</span>
-                </div>
-            </div>
-            <div class="module-card p-12 reveal" style="transition-delay: 100ms">
-                <p class="text-zinc-700 font-bold mb-8 text-xs">01.02</p>
-                <h3 class="text-2xl font-bold mb-6">Modelação <br>3D & AR</h3>
-                <p class="text-zinc-500 text-sm leading-relaxed mb-8">
-                    Modelação 3D para experiências imersivas. Pipeline completo desde a criação no Blender até à exportação para developers.
-                </p>
-                <div class="flex flex-wrap gap-2">
-                    <span class="tool-tag">Blender</span>
-                    <span class="tool-tag">Realidade Aumentada</span>
-                    <span class="tool-tag">Export Workflow</span>
-                </div>
-            </div>
-            <div class="module-card p-12 reveal" style="transition-delay: 200ms">
-                <p class="text-zinc-700 font-bold mb-8 text-xs">01.03</p>
-                <h3 class="text-2xl font-bold mb-6">Digital <br>Marketing</h3>
-                <p class="text-zinc-500 text-sm leading-relaxed mb-8">
-                    Design de newsletters e campanhas de email marketing focadas em layouts polidos e conversão eficaz.
-                </p>
-                <div class="flex flex-wrap gap-2">
-                    <span class="tool-tag">UI/UX</span>
-                    <span class="tool-tag">Graphic Production</span>
-                    <span class="tool-tag">HTML/CSS</span>
-                </div>
-            </div>
-        </div>
-    </section>
+    <!-- Site Wrapper -->
+    <div id="main-wrapper">
+        <div class="noise"></div>
+        <div class="bg-grid"></div>
+        <div id="scroll-progress"></div>
 
-    <!-- Secção 02: Projetos Atuais (YDigital) -->
-    <section id="projetos" class="max-w-7xl mx-auto px-8 py-32">
-        <div class="flex justify-between items-end mb-20 reveal">
-            <div>
-                <span class="section-number">02 / PROJETOS & OUTPUT</span>
-                <h2 class="text-5xl font-bold tracking-tighter">Global Projects</h2>
-            </div>
-        </div>
+        <!-- Navegação -->
+        <header class="fixed top-0 w-full z-50 p-6 md:p-8">
+            <nav class="max-w-7xl mx-auto nav-blur-box rounded-2xl px-6 py-4 md:px-10 flex justify-between items-center transition-all duration-500">
+                <div class="text-xl font-bold tracking-tighter uppercase italic cursor-pointer" onclick="window.scrollTo({top: 0, behavior: 'smooth'})">
+                    ALEXANDRE<span class="text-zinc-500">.COSME</span>
+                </div>
+                <div class="hidden md:flex gap-10 text-[10px] font-bold uppercase tracking-[0.3em]">
+                    <a href="#expertise" class="text-white/50 hover:text-white transition">Expertise</a>
+                    <a href="#sobre" class="text-white/50 hover:text-white transition">Perfil</a>
+                    <a href="#showroom" class="text-white/50 hover:text-white transition">Showroom</a>
+                    <a href="#projetos" class="text-white/50 hover:text-white transition">Trabalho</a>
+                    <a href="#contacto" class="text-white/50 hover:text-white transition">Contacto</a>
+                </div>
+                <div class="flex items-center gap-4">
+                    <div class="text-[10px] font-bold opacity-30 tracking-tighter hidden lg:block italic">ISTEC.ENG</div>
+                    <div class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
+                </div>
+            </nav>
+        </header>
 
-        <div class="space-y-12">
-            <!-- Projeto Principal -->
-            <div class="reveal group relative module-card overflow-hidden">
-                <div class="grid md:grid-cols-2 items-stretch">
-                    <div class="aspect-video md:aspect-auto bg-zinc-900 overflow-hidden">
-                        <img src="https://images.unsplash.com/photo-1551334787-21e6bd3ab135?q=80&w=1000&auto=format&fit=crop" 
-                             alt="[Conteúdo Redes Sociais Global]" 
-                             class="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-1000 group-hover:scale-105 opacity-60">
-                    </div>
-                    <div class="p-12 flex flex-col justify-center">
-                        <span class="text-zinc-600 text-[9px] font-bold uppercase tracking-[0.3em] mb-4">Social Media & Motion</span>
-                        <h3 class="text-3xl font-bold mb-6">YDigital Global Content</h3>
-                        <p class="text-zinc-500 text-sm leading-relaxed mb-10 italic">
-                            Criação de Reels e posts dinâmicos para mercados como EUA, Portugal, Brasil e África do Sul. Foco em engajamento e qualidade visual de alta gama.
+        <!-- Hero Section -->
+        <section id="home" class="min-h-screen flex flex-col justify-center px-8 md:px-24 pt-20">
+            <div class="max-w-6xl reveal active">
+                <span class="text-[10px] font-bold tracking-[0.6em] text-zinc-500 uppercase mb-8 block italic">Est. 2003 // Based in Lisbon</span>
+                <h1 class="text-6xl md:text-[130px] font-bold tracking-tighter leading-[0.8] mb-12 uppercase">
+                    ALEXANDRE <br> <span class="text-zinc-500 italic font-light">COSME.</span>
+                </h1>
+                <div class="grid md:grid-cols-2 gap-16 items-start">
+                    <div>
+                        <p class="text-[11px] font-bold uppercase tracking-[0.5em] text-white mb-6">Multimedia Engineer</p>
+                        <p class="text-zinc-500 text-base md:text-lg font-medium leading-relaxed max-w-lg">
+                            Fusão estratégica entre design visual e rigor tecnológico. Especialista na criação de conteúdos dinâmicos e experiências interativas de Realidade Aumentada.
                         </p>
-                        <div class="flex gap-10">
-                            <div>
-                                <p class="text-[8px] font-bold text-zinc-700 uppercase mb-1">Mercados</p>
-                                <p class="text-xs font-bold italic">US, PT, BR, SA</p>
-                            </div>
-                            <div>
-                                <p class="text-[8px] font-bold text-zinc-700 uppercase mb-1">Stack</p>
-                                <p class="text-xs font-bold italic">PS / AI / AE</p>
-                            </div>
+                    </div>
+                    <div class="flex flex-col items-end gap-6 text-right md:pt-12">
+                        <p class="text-[10px] font-bold uppercase tracking-widest text-zinc-700 italic">Atualmente @ YDigital Media</p>
+                        <a href="#sobre" class="group flex items-center gap-4 text-xs font-bold uppercase tracking-widest border-b border-zinc-800 pb-2 hover:border-white transition-all">
+                            Ver Perfil <i data-lucide="arrow-right" size="14" class="group-hover:translate-x-1 transition-transform"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Expertise -->
+        <section id="expertise" class="max-w-7xl mx-auto px-8 py-32">
+            <span class="section-number">01 / CAPACIDADES TÉCNICAS</span>
+            <div class="grid md:grid-cols-3 gap-6">
+                <div class="expertise-card p-12 reveal">
+                    <p class="text-zinc-700 font-bold mb-8 text-xs">01.01</p>
+                    <h3 class="text-2xl font-bold mb-6">Creative <br>Content</h3>
+                    <p class="text-zinc-500 text-sm leading-relaxed mb-8">Criação de motion graphics (Reels) e design para mercados globais (EUA, PT, BR, ZA).</p>
+                    <div class="flex flex-wrap gap-2">
+                        <span class="tool-tag">Photoshop</span>
+                        <span class="tool-tag">After Effects</span>
+                    </div>
+                </div>
+                <div class="expertise-card p-12 reveal" style="transition-delay: 100ms">
+                    <p class="text-zinc-700 font-bold mb-8 text-xs">01.02</p>
+                    <h3 class="text-2xl font-bold mb-6">Modelação <br>3D & AR</h3>
+                    <p class="text-zinc-500 text-sm leading-relaxed mb-8">Modelação em Blender e exportação otimizada para integração em Realidade Aumentada.</p>
+                    <div class="flex flex-wrap gap-2">
+                        <span class="tool-tag">Blender</span>
+                        <span class="tool-tag">Reality Engine</span>
+                    </div>
+                </div>
+                <div class="expertise-card p-12 reveal" style="transition-delay: 200ms">
+                    <p class="text-zinc-700 font-bold mb-8 text-xs">01.03</p>
+                    <h3 class="text-2xl font-bold mb-6">Digital <br>Marketing</h3>
+                    <p class="text-zinc-500 text-sm leading-relaxed mb-8">Design de newsletters e campanhas de email marketing com foco em arquitetura de informação.</p>
+                    <div class="flex flex-wrap gap-2">
+                        <span class="tool-tag">Illustrator</span>
+                        <span class="tool-tag">HTML/CSS</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Perfil (ATUALIZADO COM CV) -->
+        <section id="sobre" class="max-w-7xl mx-auto px-8 py-32 border-t border-zinc-900">
+            <div class="grid md:grid-cols-12 gap-16 items-start">
+                <div class="md:col-span-7 reveal">
+                    <span class="section-number">02 / PERFIL & PERCURSO</span>
+                    <h2 class="text-6xl font-bold tracking-tighter mb-12 leading-none italic">Alexandre <br> Cosme.</h2>
+                    <div class="space-y-8 text-zinc-400 text-base leading-relaxed">
+                        <p>
+                            Chamo-me Alexandre Cosme, tenho 21 anos. Sou uma pessoa que gosta de aprender e de ter desafios, considerando-os cruciais para o autodesenvolvimento. 
+                        </p>
+                        <p>
+                            Aprendo rápido e enfrento as dificuldades como barreiras para o sucesso. Licenciado em <span class="text-white">Engenharia Multimédia</span>, domino o workflow de programação, desenvolvimento web, 3D, edição de foto/vídeo e design gráfico.
+                        </p>
+                    </div>
+
+                    <!-- Experiência Profissional -->
+                    <div class="mt-20 space-y-12">
+                        <div class="reveal border-l-2 border-white pl-8 py-2">
+                            <p class="text-[9px] font-bold text-zinc-600 uppercase mb-2">Momento Atual</p>
+                            <h4 class="text-xl font-bold tracking-tighter italic">Multimedia & AR Specialist</h4>
+                            <p class="text-xs text-zinc-400 mt-1 uppercase tracking-widest italic">YDigital Media | 2025 — Presente</p>
+                        </div>
+                        <div class="reveal border-l-2 border-zinc-800 pl-8 py-2">
+                            <h4 class="text-lg font-bold text-zinc-300 tracking-tighter italic">Graphic Designer</h4>
+                            <p class="text-xs text-zinc-600 mt-1 uppercase tracking-widest italic">GCIMedia Group | 2024</p>
+                            <p class="mt-2 text-zinc-500 text-xs">Estágio Curricular: Publicidade, WebDesign, Packaging e Produção Gráfica.</p>
+                        </div>
+                        <div class="reveal border-l-2 border-zinc-800 pl-8 py-2">
+                            <h4 class="text-lg font-bold text-zinc-300 tracking-tighter italic">Técnico Audiovisual</h4>
+                            <p class="text-xs text-zinc-600 mt-1 uppercase tracking-widest italic">Palco 22 | 2022 — 2023</p>
+                            <p class="mt-2 text-zinc-500 text-xs">Instalação de sinais vídeo/áudio, organização de eventos e operação de câmara.</p>
+                        </div>
+                        <div class="reveal border-l-2 border-zinc-800 pl-8 py-2">
+                            <h4 class="text-lg font-bold text-zinc-300 tracking-tighter italic">Freelance Photographer</h4>
+                            <p class="text-xs text-zinc-600 mt-1 uppercase tracking-widest italic">Alexandre Cosme Fotografia | 2022 — Presente</p>
+                        </div>
+                    </div>
+
+                    <!-- Voluntariado -->
+                    <div class="mt-20 reveal">
+                        <h5 class="text-[10px] font-bold text-zinc-600 uppercase tracking-widest mb-6 italic">Voluntariado</h5>
+                        <div class="border border-zinc-900 p-6 rounded-xl bg-zinc-900/10">
+                            <p class="text-sm font-bold">Lisboa Games Week 2022</p>
+                            <p class="text-xs text-zinc-500 mt-1">Suporte Geral: Montagem de simuladores de corrida e receção de visitantes.</p>
                         </div>
                     </div>
                 </div>
-            </div>
 
-            <div class="grid md:grid-cols-2 gap-12">
-                <div class="reveal module-card p-1 group">
-                    <div class="aspect-[16/10] bg-zinc-900 overflow-hidden mb-8">
-                         <img src="https://images.unsplash.com/photo-1633356122544-f134324a6cee?q=80&w=1000&auto=format&fit=crop" 
-                             alt="[Modelação 3D para RA]" 
-                             class="w-full h-full object-cover grayscale opacity-40 group-hover:opacity-100 transition-all duration-700">
-                    </div>
-                    <div class="px-8 pb-8">
-                        <h4 class="text-xl font-bold mb-2 italic">3D AR Experiences</h4>
-                        <p class="text-zinc-500 text-xs leading-relaxed">Modelação de ativos em Blender otimizados para integração direta em experiências de Realidade Aumentada.</p>
-                    </div>
-                </div>
-                <div class="reveal module-card p-1 group" style="transition-delay: 150ms">
-                    <div class="aspect-[16/10] bg-zinc-900 overflow-hidden mb-8">
-                         <img src="https://images.unsplash.com/photo-1563986768609-322da13575f3?q=80&w=1000&auto=format&fit=crop" 
-                             alt="[Design de Email Marketing]" 
-                             class="w-full h-full object-cover grayscale opacity-40 group-hover:opacity-100 transition-all duration-700">
-                    </div>
-                    <div class="px-8 pb-8">
-                        <h4 class="text-xl font-bold mb-2 italic">Campaign Newsletters</h4>
-                        <p class="text-zinc-500 text-xs leading-relaxed">Design e layout de email marketing premium desenvolvidos em Illustrator para máxima eficácia visual.</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- Secção 03: Sobre Alexandre (Perfil & CV) -->
-    <section id="sobre" class="max-w-7xl mx-auto px-8 py-32 border-t border-zinc-900">
-        <div class="grid md:grid-cols-12 gap-16 items-start">
-            <div class="md:col-span-7 reveal">
-                <span class="section-number">03 / PERFIL & HISTÓRICO</span>
-                <h2 class="text-6xl font-bold tracking-tighter mb-12 leading-none italic">Alexandre <br> Cosme.</h2>
-                
-                <div class="space-y-8 text-zinc-400 text-base leading-relaxed">
-                    <p>
-                        Sou um Engenheiro Multimédia movido por desafios e evolução constante. A minha abordagem foca-se na eficiência técnica como barreira para o sucesso criativo. 
-                    </p>
-                    <p>
-                        Com formação no <span class="text-white">ISTEC</span>, domino o workflow completo de produção digital — desde a programação e web design até à modelação 3D e edição de vídeo profissional.
-                    </p>
-                </div>
-
-                <!-- Timeline de Experiência -->
-                <div class="mt-20 space-y-16">
-                    <!-- YDigital -->
-                    <div class="reveal border-l-2 border-white pl-8 py-2">
-                        <p class="text-[9px] font-bold text-zinc-600 uppercase mb-2">Cargo Atual</p>
-                        <h4 class="text-xl font-bold tracking-tighter">Multimedia & AR Specialist</h4>
-                        <p class="text-xs text-zinc-400 mt-1 uppercase tracking-widest italic">YDigital Media | Abr 2025 — Presente</p>
-                        <ul class="mt-4 space-y-2 text-zinc-500 text-xs leading-relaxed">
-                            <li>> Criação de posts estáticos (PS/AI) para EUA, PT, BR e África do Sul.</li>
-                            <li>> Desenvolvimento de Reels dinâmicos em After Effects.</li>
-                            <li>> Modelação 3D em Blender para integração em Realidade Aumentada.</li>
-                            <li>> Design de campanhas de newsletters em Illustrator.</li>
-                        </ul>
-                    </div>
-                    <!-- GCIMedia -->
-                    <div class="reveal border-l-2 border-zinc-800 pl-8 py-2">
-                        <h4 class="text-lg font-bold text-zinc-300 tracking-tighter">Graphic Designer - Estágio</h4>
-                        <p class="text-xs text-zinc-600 mt-1 uppercase tracking-widest italic">GCIMedia Group | 2024</p>
-                        <p class="mt-3 text-zinc-500 text-xs leading-relaxed">Foco em campanhas publicitárias, WebDesign, produção gráfica e packaging.</p>
-                    </div>
-                    <!-- Fotografia -->
-                    <div class="reveal border-l-2 border-zinc-800 pl-8 py-2">
-                        <h4 class="text-lg font-bold text-zinc-300 tracking-tighter">Freelance Photographer</h4>
-                        <p class="text-xs text-zinc-600 mt-1 uppercase tracking-widest italic">Alexandre Cosme Fotografia | 2022 — Presente</p>
-                        <p class="mt-3 text-zinc-500 text-xs leading-relaxed">Especializado em eventos desportivos e sessões privadas de alta qualidade.</p>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Imagem de Perfil Fundida no Fundo -->
-            <div class="md:col-span-5 reveal sticky top-32">
-                <div class="relative group">
-                    <!-- Lembra-te de trocar este link pela tua foto real -->
+                <div class="md:col-span-5 reveal sticky top-32 pt-10">
                     <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=1000&auto=format&fit=crop" 
                          alt="Alexandre Cosme" 
-                         class="portrait-mask w-full">
-                    <div class="absolute inset-0 bg-gradient-to-r from-transparent to-black/30 pointer-events-none"></div>
-                </div>
-                
-                <div class="mt-12 p-8 border border-zinc-900 bg-zinc-900/10 rounded-2xl">
-                    <h5 class="text-[9px] font-bold uppercase tracking-[0.4em] text-zinc-700 mb-6 italic">Formação Académica</h5>
-                    <div class="space-y-4">
-                        <div>
-                            <p class="text-sm font-bold tracking-tight">Licenciatura em Engenharia Multimédia</p>
-                            <p class="text-[10px] text-zinc-500">ISTEC • 2024</p>
-                        </div>
-                        <div class="flex flex-wrap gap-2 pt-2">
-                            <span class="tool-tag text-[7px]">Blender Cert.</span>
-                            <span class="tool-tag text-[7px]">Photoshop Cert.</span>
-                            <span class="tool-tag text-[7px]">Machine Learning</span>
+                         class="portrait-mask w-full max-w-sm mx-auto mb-12">
+                    <div class="p-8 border border-zinc-900 bg-zinc-900/10 rounded-2xl">
+                        <h5 class="text-[9px] font-bold uppercase tracking-[0.4em] text-zinc-700 mb-6 italic">Educação & Skills</h5>
+                        <div class="space-y-8">
+                            <div>
+                                <p class="text-xs font-bold text-white uppercase">Engenharia Multimédia</p>
+                                <p class="text-[10px] text-zinc-500 mt-1 uppercase">ISTEC • 2021 — 2024</p>
+                            </div>
+                            <div>
+                                <p class="text-xs font-bold text-zinc-300 uppercase">Ciências e Tecnologias</p>
+                                <p class="text-[10px] text-zinc-500 mt-1 uppercase">E.S. Rainha Dona Leonor • 2018 — 2021</p>
+                            </div>
+                            <div class="flex flex-wrap gap-2 pt-2 border-t border-zinc-800/50">
+                                <span class="tool-tag text-[7px]">Blender Cert.</span>
+                                <span class="tool-tag text-[7px]">Photoshop Cert.</span>
+                                <span class="tool-tag text-[7px]">Machine Learning</span>
+                                <span class="tool-tag text-[7px]">Entrepreneur</span>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
-        </div>
-    </section>
+        </section>
 
-    <!-- Footer / Contacto -->
-    <footer id="contacto" class="max-w-7xl mx-auto px-8 py-40 border-t border-zinc-900">
-        <div class="grid md:grid-cols-2 gap-20">
-            <div class="reveal text-left">
-                <span class="section-number">04 / CONTACTO</span>
-                <h2 class="text-7xl font-bold tracking-tighter leading-none mb-16 underline underline-offset-[16px] decoration-zinc-800">CONNECT.</h2>
-                <div class="space-y-6">
-                    <a href="mailto:alexandrexbdcosme@gmail.com" class="text-xl md:text-3xl font-light hover:text-zinc-500 transition block w-fit border-b border-zinc-900 pb-2">alexandrexbdcosme@gmail.com</a>
-                    <p class="text-[10px] font-bold text-zinc-600 uppercase tracking-widest italic">Ribamar, Ericeira • Lisboa, PT</p>
-                    <p class="text-sm font-bold tracking-tighter opacity-80">(+351) 933 059 987</p>
+        <!-- Showroom -->
+        <section id="showroom" class="max-w-7xl mx-auto px-8 py-32 border-t border-zinc-900">
+            <div class="grid md:grid-cols-12 gap-16 items-center">
+                <div class="md:col-span-7 reveal flex flex-col justify-center">
+                    <span class="section-number">03 / 3D INTERACTIVE HUB</span>
+                    <h2 class="text-6xl font-bold tracking-tighter mb-10 leading-none">Showroom <br><span class="text-zinc-500 italic">Interativo.</span></h2>
+                    <p class="text-zinc-400 text-base leading-relaxed">Visualização técnica de ativos 3D otimizados. Explora a topologia e o detalhe em tempo real.</p>
+                </div>
+                <div class="md:col-span-5 reveal">
+                    <div id="canvas-container">
+                        <div class="absolute bottom-4 right-4 text-[8px] font-bold uppercase tracking-widest text-zinc-600 pointer-events-none">Interage: Roda o modelo</div>
+                    </div>
                 </div>
             </div>
-            <div class="flex flex-col md:items-end justify-end reveal">
-                <div class="flex gap-12 text-[10px] font-bold uppercase tracking-[0.4em] text-zinc-500 mb-12">
-                    <a href="https://linkedin.com/in/alexandre-cosme-857a59198/" target="_blank" class="hover:text-white transition">LinkedIn</a>
-                    <a href="#" class="hover:text-white transition">Behance</a>
-                    <a href="#" class="hover:text-white transition">GitHub</a>
+        </section>
+
+        <!-- Projetos -->
+        <section id="projetos" class="max-w-7xl mx-auto px-8 py-20 border-t border-zinc-900">
+            <span class="section-number">04 / PROJETOS DE DESTAQUE</span>
+            <h2 class="text-5xl font-bold tracking-tighter uppercase italic text-zinc-200 mb-12">Visual Work.</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div class="reveal group module-card project-card overflow-hidden cursor-pointer rounded-xl bg-zinc-900/20">
+                    <div class="aspect-video relative overflow-hidden">
+                        <img src="https://images.unsplash.com/photo-1551334787-21e6bd3ab135?q=80&w=1000&auto=format&fit=crop" class="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-700 opacity-40 group-hover:opacity-100">
+                        <div class="absolute bottom-4 left-4"><h4 class="text-sm font-bold text-white">Digital Content</h4></div>
+                    </div>
                 </div>
-                <div class="text-right opacity-30">
-                    <p class="text-[9px] uppercase tracking-[0.5em] italic">Engineering Visual Immersive Excellence</p>
-                    <p class="text-[8px] uppercase tracking-[0.3em] mt-2">© 2024 Alexandre Cosme</p>
+                <div class="reveal group module-card project-card overflow-hidden cursor-pointer rounded-xl bg-zinc-900/20" style="transition-delay: 50ms">
+                    <div class="aspect-video relative overflow-hidden">
+                        <img src="https://images.unsplash.com/photo-1633356122544-f134324a6cee?q=80&w=1000&auto=format&fit=crop" class="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-700 opacity-40 group-hover:opacity-100">
+                        <div class="absolute bottom-4 left-4"><h4 class="text-sm font-bold text-white">AR Assets</h4></div>
+                    </div>
+                </div>
+                <div class="reveal group module-card project-card overflow-hidden cursor-pointer rounded-xl bg-zinc-900/20" style="transition-delay: 100ms">
+                    <div class="aspect-video relative overflow-hidden">
+                        <img src="https://images.unsplash.com/photo-1563986768609-322da13575f3?q=80&w=1000&auto=format&fit=crop" class="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-700 opacity-40 group-hover:opacity-100">
+                        <div class="absolute bottom-4 left-4"><h4 class="text-sm font-bold text-white">Packaging</h4></div>
+                    </div>
+                </div>
+                <div class="reveal group module-card project-card overflow-hidden cursor-pointer rounded-xl bg-zinc-900/20" style="transition-delay: 150ms">
+                    <div class="aspect-video relative overflow-hidden">
+                        <img src="https://images.unsplash.com/photo-1542744094-24638eff58bb?q=80&w=1000&auto=format&fit=crop" class="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-700 opacity-40 group-hover:opacity-100">
+                        <div class="absolute bottom-4 left-4"><h4 class="text-sm font-bold text-white">Print Work</h4></div>
+                    </div>
                 </div>
             </div>
-        </div>
-    </footer>
+        </section>
+
+        <!-- CTA SECTION -->
+        <section class="py-24 bg-zinc-950 border-t border-zinc-900">
+            <div class="marquee mb-24">
+                <div class="marquee-content">
+                    <span class="marquee-item">3D Modelling</span>
+                    <span class="marquee-item">AR Experiences</span>
+                    <span class="marquee-item">Multimedia Engineering</span>
+                    <span class="marquee-item">Visual Arts</span>
+                    <span class="marquee-item">Innovation</span>
+                    <span class="marquee-item">3D Modelling</span>
+                    <span class="marquee-item">AR Experiences</span>
+                    <span class="marquee-item">Multimedia Engineering</span>
+                    <span class="marquee-item">Visual Arts</span>
+                    <span class="marquee-item">Innovation</span>
+                </div>
+            </div>
+
+            <div class="max-w-7xl mx-auto px-8 text-center reveal">
+                <div class="cta-big-text-container" onclick="window.location.href='mailto:alexandrexbdcosme@gmail.com'">
+                    <h2 class="cta-big-text">
+                        Vamos dar dimensão <br> ao seu próximo projeto?
+                    </h2>
+                </div>
+                <p class="text-zinc-500 text-[10px] font-bold uppercase tracking-[0.4em] mt-12 italic">Disponível para colaborações globais</p>
+            </div>
+        </section>
+
+        <!-- Footer / Contacto -->
+        <footer id="contacto" class="max-w-7xl mx-auto px-8 py-32 border-t border-zinc-900">
+            <div class="grid md:grid-cols-2 gap-20 items-start">
+                <div class="reveal">
+                    <span class="section-number">05 / CONTACTO</span>
+                    <h2 class="text-7xl font-bold tracking-tighter mb-16 uppercase italic">Connect.</h2>
+                    <div class="space-y-12">
+                        <div>
+                            <p class="text-zinc-600 text-[10px] font-bold uppercase tracking-widest mb-4 italic">Get in touch</p>
+                            <a href="mailto:alexandrexbdcosme@gmail.com" class="text-2xl md:text-3xl font-light hover:text-white transition-all border-b border-zinc-800 pb-2">
+                                alexandrexbdcosme@gmail.com
+                            </a>
+                        </div>
+                        <div class="flex flex-col gap-2">
+                            <p class="text-lg font-medium">Ribamar • Ericeira • Lisboa</p>
+                            <p class="text-sm text-zinc-500 italic">(+351) 933 059 987</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="flex flex-col md:items-end justify-end reveal h-full pt-10 md:pt-40">
+                    <p class="text-zinc-600 text-[10px] font-bold uppercase tracking-widest mb-8 italic">Follow the work</p>
+                    <div class="flex gap-10 items-center">
+                        <a href="https://linkedin.com/in/alexandre-cosme-857a59198/" target="_blank" class="social-link">
+                            <i data-lucide="linkedin" size="24"></i>
+                        </a>
+                        <a href="https://instagram.com" target="_blank" class="social-link">
+                            <i data-lucide="instagram" size="24"></i>
+                        </a>
+                        <a href="https://behance.net" target="_blank" class="social-link">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 12H3"/><path d="M12 7H3a2 2 0 1 0 0 4 2 2 0 1 0 0 4h9V7Z"/><path d="M17 12a3 3 0 1 0 0 6 3 3 0 1 0 0-6Z"/><path d="M15 9h4"/></svg>
+                        </a>
+                    </div>
+                    <div class="mt-20 text-right opacity-20 italic text-[8px] tracking-[0.4em]">
+                        ALEXANDRE COSME • 2024
+                    </div>
+                </div>
+            </div>
+        </footer>
+    </div>
 
     <script>
-        // Inicializar Icones Lucide
         lucide.createIcons();
 
-        // Reveal no Scroll (Observer)
+        // Reveal Observer
         const observer = new IntersectionObserver((entries) => {
             entries.forEach(entry => {
-                if (entry.isIntersecting) {
-                    entry.target.classList.add('active');
-                }
+                if (entry.isIntersecting) entry.target.classList.add('active');
             });
         }, { threshold: 0.1 });
-
         document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
 
-        // Progresso do Scroll no topo
+        // Loader
+        window.addEventListener('load', () => {
+            const preloader = document.getElementById('preloader');
+            const loaderFill = document.getElementById('loaderFill');
+            const loaderPerc = document.getElementById('loaderPerc');
+            let progress = 0;
+
+            const updateLoader = () => {
+                let step = Math.random() * 5 + 4; 
+                progress += step;
+                if (progress >= 100) {
+                    progress = 100;
+                    loaderFill.style.width = `100%`;
+                    loaderPerc.innerText = `100%`;
+                    setTimeout(() => {
+                        preloader.classList.add('preloader-hidden');
+                        document.body.classList.add('content-loaded');
+                        document.body.style.overflowY = 'auto';
+                    }, 400); 
+                    return;
+                }
+                loaderFill.style.width = `${progress}%`;
+                loaderPerc.innerText = `${Math.floor(progress)}%`;
+                setTimeout(updateLoader, 20);
+            };
+            updateLoader();
+        });
+
+        // Scroll Bar
         window.addEventListener('scroll', () => {
             const winScroll = document.body.scrollTop || document.documentElement.scrollTop;
             const height = document.documentElement.scrollHeight - document.documentElement.clientHeight;
             const scrolled = (winScroll / height) * 100;
-            document.getElementById("scroll-progress").style.width = scrolled + "%";
+            const progress = document.getElementById("scroll-progress");
+            if(progress) progress.style.width = scrolled + "%";
         });
+
+        // 3D Engine
+        let scene, camera, renderer, object;
+        const container = document.getElementById('canvas-container');
+
+        function init3D() {
+            if (!container) return;
+            scene = new THREE.Scene();
+            camera = new THREE.PerspectiveCamera(75, container.clientWidth / container.clientHeight, 0.1, 1000);
+            camera.position.z = 2.5;
+            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+            renderer.setSize(container.clientWidth, container.clientHeight);
+            renderer.setPixelRatio(window.devicePixelRatio);
+            container.appendChild(renderer.domElement);
+            scene.add(new THREE.AmbientLight(0xffffff, 0.6));
+            const light = new THREE.DirectionalLight(0xffffff, 1);
+            light.position.set(5, 5, 5);
+            scene.add(light);
+            const geometry = new THREE.TorusKnotGeometry(0.7, 0.2, 100, 16);
+            const material = new THREE.MeshStandardMaterial({ color: 0x444444, wireframe: true, transparent: true, opacity: 0.6 });
+            object = new THREE.Mesh(geometry, material);
+            scene.add(object);
+            animate3D();
+        }
+
+        function animate3D() {
+            requestAnimationFrame(animate3D);
+            if (object) { object.rotation.y += 0.003; object.rotation.x += 0.001; }
+            renderer.render(scene, camera);
+        }
+
+        window.addEventListener('resize', () => {
+            if (camera && renderer && container) {
+                camera.aspect = container.clientWidth / container.clientHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(container.clientWidth, container.clientHeight);
+            }
+        });
+        
+        init3D();
     </script>
 </body>
 </html>
