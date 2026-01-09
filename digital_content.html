@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Digital Content Showcase | Alexandre Cosme</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Space+Grotesk:wght@300;500;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #030303;
+            --border: rgba(255, 255, 255, 0.08);
+        }
+
+        html { scroll-behavior: smooth; }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg);
+            color: #ffffff;
+            margin: 0;
+            overflow-x: hidden;
+        }
+
+        h1, h2, h3 { font-family: 'Space Grotesk', sans-serif; text-transform: uppercase; }
+
+        /* --- BACKGROUND CONSISTENCY --- */
+        .noise {
+            position: fixed;
+            inset: 0;
+            width: 100%; height: 100%;
+            opacity: 0.02; z-index: 50;
+            pointer-events: none;
+            background-image: url('https://grainy-gradients.vercel.app/noise.svg');
+        }
+
+        .bg-grid {
+            position: fixed;
+            inset: 0;
+            background-image: linear-gradient(var(--border) 1px, transparent 1px),
+                              linear-gradient(90deg, var(--border) 1px, transparent 1px);
+            background-size: 60px 60px;
+            z-index: -2;
+            mask-image: radial-gradient(circle at 50% 50%, black, transparent);
+            -webkit-mask-image: radial-gradient(circle at 50% 50%, black, transparent);
+        }
+
+        .nav-blur-box {
+            background: rgba(10, 10, 10, 0.6);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        /* --- GALLERY STYLES --- */
+        .gallery-grid-item {
+            border: 1px solid var(--border);
+            background: rgba(255,255,255,0.01);
+            transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .gallery-grid-item:hover {
+            border-color: #fff;
+            transform: translateY(-5px);
+            background: rgba(255,255,255,0.03);
+        }
+
+        .filter-tag {
+            font-size: 9px;
+            font-weight: 700;
+            padding: 6px 14px;
+            border: 1px solid var(--border);
+            text-transform: uppercase;
+            letter-spacing: 0.2em;
+            color: #555;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .filter-tag:hover, .filter-tag.active {
+            color: #fff;
+            border-color: #fff;
+        }
+
+        .reveal {
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .reveal.active { opacity: 1; transform: translateY(0); }
+    </style>
+</head>
+<body class="selection:bg-white selection:text-black">
+    
+    <!-- Background Elements -->
+    <div class="noise"></div>
+    <div class="bg-grid"></div>
+
+    <!-- Gallery Header -->
+    <header class="p-6 md:p-8 flex justify-between items-center sticky top-0 z-[100] nav-blur-box">
+        <div class="flex items-center gap-6">
+            <a href="index.html" class="group flex items-center gap-3 text-[10px] font-bold uppercase tracking-widest text-zinc-500 hover:text-white transition">
+                <i data-lucide="arrow-left" size="14" class="group-hover:-translate-x-1 transition"></i> Voltar ao Portfólio
+            </a>
+            <div class="w-[1px] h-4 bg-zinc-800 hidden md:block"></div>
+            <h1 class="text-sm font-bold tracking-tighter hidden md:block uppercase">Digital Content <span class="text-zinc-600 italic">Showcase</span></h1>
+        </div>
+        
+        <div class="flex gap-4">
+            <span class="filter-tag active">Todos</span>
+            <span class="filter-tag hidden md:block">Social Media</span>
+            <span class="filter-tag hidden md:block">Motion</span>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-8 py-20 relative z-10">
+        <!-- Hero Section -->
+        <div class="mb-24 reveal">
+            <span class="text-[10px] font-bold text-zinc-700 tracking-[0.5em] mb-4 block italic uppercase">Selected Works 2024-2025</span>
+            <h2 class="text-5xl md:text-8xl font-bold tracking-tighter italic leading-none">
+                Criatividade <br> Digital <span class="text-zinc-800">&</span> <br> Alta Performance.
+            </h2>
+        </div>
+
+        <!-- Grelha de Projetos -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <!-- Projeto 01 -->
+            <div class="gallery-grid-item p-4 rounded-2xl group reveal">
+                <div class="aspect-video bg-zinc-900/50 overflow-hidden rounded-xl mb-6 relative">
+                    <img src="https://images.unsplash.com/photo-1611162617474-5b21e879e113?q=80&w=1000&auto=format&fit=crop" 
+                         alt="Social Media Project" 
+                         class="w-full h-full object-cover opacity-60 group-hover:opacity-100 group-hover:scale-105 transition-all duration-1000">
+                    <div class="absolute top-4 right-4 bg-black/50 backdrop-blur-md p-2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
+                        <i data-lucide="zoom-in" size="14"></i>
+                    </div>
+                </div>
+                <div class="px-2">
+                    <span class="text-[8px] font-bold text-zinc-600 uppercase tracking-widest block mb-2">Campaign Design / USA Market</span>
+                    <h3 class="text-xl font-bold mb-3 italic">Social Ads Strategy</h3>
+                    <p class="text-zinc-500 text-sm leading-relaxed max-w-sm">
+                        Desenvolvimento de ativos visuais para campanhas globais, focados em conversão e consistência visual da marca.
+                    </p>
+                </div>
+            </div>
+
+            <!-- Projeto 02 -->
+            <div class="gallery-grid-item p-4 rounded-2xl group reveal" style="transition-delay: 100ms">
+                <div class="aspect-[9/16] bg-zinc-900/50 overflow-hidden rounded-xl mb-6 relative max-w-sm mx-auto">
+                    <img src="https://images.unsplash.com/photo-1550745679-33f752a78122?q=80&w=1000&auto=format&fit=crop" 
+                         alt="Motion Reels" 
+                         class="w-full h-full object-cover opacity-60 group-hover:opacity-100 transition-opacity">
+                    <div class="absolute inset-0 flex items-center justify-center">
+                        <i data-lucide="play" size="48" class="text-white/20 group-hover:text-white transition-all"></i>
+                    </div>
+                </div>
+                <div class="px-2 text-center md:text-left">
+                    <span class="text-[8px] font-bold text-zinc-600 uppercase tracking-widest block mb-2">Motion Graphics / Reels</span>
+                    <h3 class="text-xl font-bold mb-3 italic">Dynamic Video Sequence</h3>
+                    <p class="text-zinc-500 text-sm leading-relaxed max-w-sm">
+                        Edição de vídeo dinâmica para Instagram Reels e TikTok, otimizando o storytelling para retenção de audiência.
+                    </p>
+                </div>
+            </div>
+
+            <!-- Projeto 03 -->
+            <div class="gallery-grid-item p-4 rounded-2xl group reveal">
+                <div class="aspect-video bg-zinc-900/50 overflow-hidden rounded-xl mb-6 relative">
+                    <img src="https://images.unsplash.com/photo-1557264305-7e2764da873b?q=80&w=1000&auto=format&fit=crop" 
+                         alt="Newsletter Design" 
+                         class="w-full h-full object-cover opacity-60 group-hover:opacity-100 transition-opacity">
+                </div>
+                <div class="px-2">
+                    <span class="text-[8px] font-bold text-zinc-600 uppercase tracking-widest block mb-2">Direct Marketing / Newsletters</span>
+                    <h3 class="text-xl font-bold mb-3 italic">Editorial Web Layout</h3>
+                    <p class="text-zinc-500 text-sm leading-relaxed max-w-sm">
+                        Criação de layouts de email marketing responsivos, garantindo legibilidade e impacto em qualquer dispositivo.
+                    </p>
+                </div>
+            </div>
+
+            <!-- Projeto 04 -->
+            <div class="gallery-grid-item p-4 rounded-2xl group reveal" style="transition-delay: 100ms">
+                <div class="aspect-video bg-zinc-900/50 overflow-hidden rounded-xl mb-6 relative">
+                    <img src="https://images.unsplash.com/photo-1561070791-2526d30994b5?q=80&w=1000&auto=format&fit=crop" 
+                         alt="Ads Strategy" 
+                         class="w-full h-full object-cover opacity-60 group-hover:opacity-100 transition-opacity">
+                </div>
+                <div class="px-2">
+                    <span class="text-[8px] font-bold text-zinc-600 uppercase tracking-widest block mb-2">Branding / Advertising</span>
+                    <h3 class="text-xl font-bold mb-3 italic">Multi-Format Assets</h3>
+                    <p class="text-zinc-500 text-sm leading-relaxed max-w-sm">
+                        Desenvolvimento de peças publicitárias variadas, mantendo a identidade central do projeto.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer class="py-20 text-center opacity-20 italic text-[8px] tracking-[0.5em] uppercase font-bold relative z-10">
+        Alexandre Cosme Portfolio • Digital Showcase • 2024
+    </footer>
+
+    <script>
+        lucide.createIcons();
+
+        // Reveal Animation Observer
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) entry.target.classList.add('active');
+            });
+        }, { threshold: 0.1 });
+        document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+    </script>
+</body>
+</html>
