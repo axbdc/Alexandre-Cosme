@@ -23,9 +23,8 @@
             overflow-x: hidden;
         }
 
-        h1, h2, h3 { font-family: 'Space Grotesk', sans-serif; text-transform: uppercase; }
+        h1, h2, h3, h4 { font-family: 'Space Grotesk', sans-serif; text-transform: uppercase; }
 
-        /* --- BACKGROUND CONSISTENCY --- */
         .noise {
             position: fixed;
             inset: 0;
@@ -53,11 +52,11 @@
             border-bottom: 1px solid rgba(255, 255, 255, 0.05);
         }
 
-        /* --- GALLERY STYLES --- */
         .gallery-grid-item {
             border: 1px solid var(--border);
             background: rgba(255,255,255,0.01);
             transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+            cursor: pointer;
         }
 
         .gallery-grid-item:hover {
@@ -90,128 +89,215 @@
         }
 
         .reveal.active { opacity: 1; transform: translateY(0); }
+
+        #project-modal { transition: visibility 0s, opacity 0.4s ease; }
+        #project-modal.hidden { visibility: hidden; opacity: 0; pointer-events: none; }
+        .modal-content-anim { transform: scale(0.95); transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1); }
+        #project-modal:not(.hidden) .modal-content-anim { transform: scale(1); }
+
+        .carousel-btn {
+            background: rgba(0, 0, 0, 0.4);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.3s ease;
+        }
+
+        #modal-img { transition: opacity 0.3s ease-in-out; }
     </style>
 </head>
 <body class="selection:bg-white selection:text-black">
     
-    <!-- Background Elements -->
     <div class="noise"></div>
     <div class="bg-grid"></div>
 
-    <!-- Gallery Header -->
+    <!-- Modal -->
+    <div id="project-modal" class="fixed inset-0 z-[200] flex items-center justify-center p-4 md:p-10 hidden">
+        <div class="absolute inset-0 bg-black/95 backdrop-blur-xl" onclick="closeModal()"></div>
+        <div class="relative w-full max-w-6xl bg-zinc-950 border border-white/10 rounded-3xl overflow-hidden modal-content-anim shadow-2xl flex flex-col md:flex-row h-full max-h-[90vh]">
+            <button onclick="closeModal()" class="absolute top-6 right-6 z-[210] p-2 bg-black/50 text-white rounded-full hover:bg-white hover:text-black transition shadow-lg">
+                <i data-lucide="x" size="20"></i>
+            </button>
+            <div class="relative w-full md:w-2/3 h-64 md:h-auto bg-zinc-900 overflow-hidden group">
+                <img id="modal-img" src="" alt="Preview" class="w-full h-full object-cover">
+                <div id="carousel-controls" class="absolute inset-0 flex items-center justify-between px-4 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+                    <button onclick="prevImage()" class="carousel-btn pointer-events-auto p-3 rounded-full text-white"><i data-lucide="chevron-left" size="24"></i></button>
+                    <button onclick="nextImage()" class="carousel-btn pointer-events-auto p-3 rounded-full text-white"><i data-lucide="chevron-right" size="24"></i></button>
+                </div>
+                <div class="absolute bottom-6 left-1/2 -translate-x-1/2 bg-black/40 backdrop-blur-md px-4 py-1.5 rounded-full border border-white/10 text-[10px] font-bold tracking-widest text-white/70">
+                    <span id="current-page">1</span> / <span id="total-pages">1</span>
+                </div>
+            </div>
+            <div class="w-full md:w-1/3 p-8 md:p-12 flex flex-col justify-center border-t md:border-t-0 md:border-l border-white/5 bg-zinc-950/50">
+                <span id="modal-category" class="text-[10px] font-bold text-zinc-500 uppercase tracking-[0.4em] mb-4 block italic">Category</span>
+                <h2 id="modal-title" class="text-3xl font-bold tracking-tighter italic mb-6">Project Title</h2>
+                <div class="w-12 h-[1px] bg-zinc-800 mb-8"></div>
+                <div class="overflow-y-auto pr-2 max-h-[300px] mb-10 custom-scrollbar">
+                    <p id="modal-desc" class="text-zinc-400 text-sm md:text-base leading-relaxed">Description...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Header -->
     <header class="p-6 md:p-8 flex justify-between items-center sticky top-0 z-[100] nav-blur-box">
         <div class="flex items-center gap-6">
-            <a href="index.html" class="group flex items-center gap-3 text-[10px] font-bold uppercase tracking-widest text-zinc-500 hover:text-white transition">
-                <i data-lucide="arrow-left" size="14" class="group-hover:-translate-x-1 transition"></i> Voltar ao Portfólio
+            <a href="#" class="group flex items-center gap-3 text-[10px] font-bold uppercase tracking-widest text-zinc-500 hover:text-white transition">
+                <i data-lucide="arrow-left" size="14" class="group-hover:-translate-x-1 transition"></i> Voltar
             </a>
-            <div class="w-[1px] h-4 bg-zinc-800 hidden md:block"></div>
             <h1 class="text-sm font-bold tracking-tighter hidden md:block uppercase">Digital Content <span class="text-zinc-600 italic">Showcase</span></h1>
         </div>
         
-        <div class="flex gap-4">
-            <span class="filter-tag active">Todos</span>
-            <span class="filter-tag hidden md:block">Social Media</span>
-            <span class="filter-tag hidden md:block">Motion</span>
+        <div id="filter-container" class="flex gap-4">
+            <span class="filter-tag active" data-filter="Todos">Todos</span>
+            <span class="filter-tag" data-filter="Social Media">Social Media</span>
+            <span class="filter-tag" data-filter="Motion">Motion</span>
         </div>
     </header>
 
     <main class="max-w-7xl mx-auto px-8 py-20 relative z-10">
-        <!-- Hero Section -->
         <div class="mb-24 reveal">
-            <span class="text-[10px] font-bold text-zinc-700 tracking-[0.5em] mb-4 block italic uppercase">Selected Works 2024-2025</span>
-            <h2 class="text-5xl md:text-8xl font-bold tracking-tighter italic leading-none">
-                Criatividade <br> Digital <span class="text-zinc-800">&</span> <br> Alta Performance.
-            </h2>
+            <span class="text-[10px] font-bold text-zinc-700 tracking-[0.5em] mb-4 block italic uppercase">Base de Dados Dinâmica</span>
+            <h2 class="text-5xl md:text-8xl font-bold tracking-tighter italic leading-none">Projetos <br> Automatizados.</h2>
         </div>
 
-        <!-- Grelha de Projetos -->
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-            <!-- Projeto 01 -->
-            <div class="gallery-grid-item p-4 rounded-2xl group reveal">
-                <div class="aspect-video bg-zinc-900/50 overflow-hidden rounded-xl mb-6 relative">
-                    <img src="https://images.unsplash.com/photo-1611162617474-5b21e879e113?q=80&w=1000&auto=format&fit=crop" 
-                         alt="Social Media Project" 
-                         class="w-full h-full object-cover opacity-60 group-hover:opacity-100 group-hover:scale-105 transition-all duration-1000">
-                    <div class="absolute top-4 right-4 bg-black/50 backdrop-blur-md p-2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
-                        <i data-lucide="zoom-in" size="14"></i>
-                    </div>
-                </div>
-                <div class="px-2">
-                    <span class="text-[8px] font-bold text-zinc-600 uppercase tracking-widest block mb-2">Campaign Design / USA Market</span>
-                    <h3 class="text-xl font-bold mb-3 italic">Social Ads Strategy</h3>
-                    <p class="text-zinc-500 text-sm leading-relaxed max-w-sm">
-                        Desenvolvimento de ativos visuais para campanhas globais, focados em conversão e consistência visual da marca.
-                    </p>
-                </div>
-            </div>
-
-            <!-- Projeto 02 -->
-            <div class="gallery-grid-item p-4 rounded-2xl group reveal" style="transition-delay: 100ms">
-                <div class="aspect-[9/16] bg-zinc-900/50 overflow-hidden rounded-xl mb-6 relative max-w-sm mx-auto">
-                    <img src="https://images.unsplash.com/photo-1550745679-33f752a78122?q=80&w=1000&auto=format&fit=crop" 
-                         alt="Motion Reels" 
-                         class="w-full h-full object-cover opacity-60 group-hover:opacity-100 transition-opacity">
-                    <div class="absolute inset-0 flex items-center justify-center">
-                        <i data-lucide="play" size="48" class="text-white/20 group-hover:text-white transition-all"></i>
-                    </div>
-                </div>
-                <div class="px-2 text-center md:text-left">
-                    <span class="text-[8px] font-bold text-zinc-600 uppercase tracking-widest block mb-2">Motion Graphics / Reels</span>
-                    <h3 class="text-xl font-bold mb-3 italic">Dynamic Video Sequence</h3>
-                    <p class="text-zinc-500 text-sm leading-relaxed max-w-sm">
-                        Edição de vídeo dinâmica para Instagram Reels e TikTok, otimizando o storytelling para retenção de audiência.
-                    </p>
-                </div>
-            </div>
-
-            <!-- Projeto 03 -->
-            <div class="gallery-grid-item p-4 rounded-2xl group reveal">
-                <div class="aspect-video bg-zinc-900/50 overflow-hidden rounded-xl mb-6 relative">
-                    <img src="https://images.unsplash.com/photo-1557264305-7e2764da873b?q=80&w=1000&auto=format&fit=crop" 
-                         alt="Newsletter Design" 
-                         class="w-full h-full object-cover opacity-60 group-hover:opacity-100 transition-opacity">
-                </div>
-                <div class="px-2">
-                    <span class="text-[8px] font-bold text-zinc-600 uppercase tracking-widest block mb-2">Direct Marketing / Newsletters</span>
-                    <h3 class="text-xl font-bold mb-3 italic">Editorial Web Layout</h3>
-                    <p class="text-zinc-500 text-sm leading-relaxed max-w-sm">
-                        Criação de layouts de email marketing responsivos, garantindo legibilidade e impacto em qualquer dispositivo.
-                    </p>
-                </div>
-            </div>
-
-            <!-- Projeto 04 -->
-            <div class="gallery-grid-item p-4 rounded-2xl group reveal" style="transition-delay: 100ms">
-                <div class="aspect-video bg-zinc-900/50 overflow-hidden rounded-xl mb-6 relative">
-                    <img src="https://images.unsplash.com/photo-1561070791-2526d30994b5?q=80&w=1000&auto=format&fit=crop" 
-                         alt="Ads Strategy" 
-                         class="w-full h-full object-cover opacity-60 group-hover:opacity-100 transition-opacity">
-                </div>
-                <div class="px-2">
-                    <span class="text-[8px] font-bold text-zinc-600 uppercase tracking-widest block mb-2">Branding / Advertising</span>
-                    <h3 class="text-xl font-bold mb-3 italic">Multi-Format Assets</h3>
-                    <p class="text-zinc-500 text-sm leading-relaxed max-w-sm">
-                        Desenvolvimento de peças publicitárias variadas, mantendo a identidade central do projeto.
-                    </p>
-                </div>
-            </div>
+        <!-- Container da Grelha (Onde o JS vai injetar os itens) -->
+        <div id="gallery-grid" class="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <!-- Os itens do Excel aparecerão aqui -->
         </div>
     </main>
 
     <footer class="py-20 text-center opacity-20 italic text-[8px] tracking-[0.5em] uppercase font-bold relative z-10">
-        Alexandre Cosme Portfolio • Digital Showcase • 2024
+        Alexandre Cosme Portfolio • 2024
     </footer>
 
     <script>
-        lucide.createIcons();
+        // --- SUA "BASE DE DADOS" (Copie as linhas do Excel para este formato) ---
+        // Você pode converter seu Excel para JSON facilmente em sites como "exceltojson.io"
+        const projectDatabase = [
+            {
+                title: "Social Ads Strategy",
+                category: "Campaign Design / USA Market",
+                filter: "Social Media",
+                description: "Desenvolvimento de ativos visuais para campanhas globais, focados em conversão.",
+                images: [
+                    "https://images.unsplash.com/photo-1611162617474-5b21e879e113?q=80&w=1000",
+                    "https://images.unsplash.com/photo-1551334787-21e6bd3ab135?q=80&w=1000"
+                ]
+            },
+            {
+                title: "Dynamic Video Sequence",
+                category: "Motion Graphics / Reels",
+                filter: "Motion",
+                description: "Edição de vídeo dinâmica para Instagram Reels e TikTok.",
+                images: [
+                    "https://images.unsplash.com/photo-1550745679-33f752a78122?q=80&w=1000",
+                    "https://images.unsplash.com/photo-1498050108023-c5249f4df085?q=80&w=1000"
+                ]
+            },
+            {
+                title: "Editorial Web Layout",
+                category: "Direct Marketing",
+                filter: "Social Media",
+                description: "Criação de layouts de email marketing responsivos.",
+                images: ["https://images.unsplash.com/photo-1557264305-7e2764da873b?q=80&w=1000"]
+            }
+        ];
 
-        // Reveal Animation Observer
-        const observer = new IntersectionObserver((entries) => {
-            entries.forEach(entry => {
-                if (entry.isIntersecting) entry.target.classList.add('active');
+        // --- LÓGICA DE RENDERIZAÇÃO ---
+        const galleryGrid = document.getElementById('gallery-grid');
+
+        function renderGallery(filter = "Todos") {
+            galleryGrid.innerHTML = ''; // Limpa a galeria
+            
+            const filteredData = filter === "Todos" 
+                ? projectDatabase 
+                : projectDatabase.filter(item => item.filter === filter);
+
+            filteredData.forEach((project, index) => {
+                const itemHtml = `
+                    <div class="gallery-grid-item p-4 rounded-2xl group reveal active" 
+                         onclick="openModalFromData(${index}, '${filter}')">
+                        <div class="aspect-video bg-zinc-900/50 overflow-hidden rounded-xl mb-6 relative">
+                            <img src="${project.images[0]}" 
+                                 alt="${project.title}" 
+                                 class="w-full h-full object-cover opacity-60 group-hover:opacity-100 group-hover:scale-105 transition-all duration-1000">
+                            <div class="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                <div class="bg-white/10 backdrop-blur-md p-4 rounded-full">
+                                    <i data-lucide="maximize-2" class="text-white"></i>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="px-2">
+                            <span class="text-[8px] font-bold text-zinc-600 uppercase tracking-widest block mb-2">${project.category}</span>
+                            <h3 class="text-xl font-bold mb-3 italic">${project.title}</h3>
+                            <p class="text-zinc-500 text-sm leading-relaxed max-w-sm">${project.description}</p>
+                        </div>
+                    </div>
+                `;
+                galleryGrid.innerHTML += itemHtml;
             });
-        }, { threshold: 0.1 });
-        document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+            lucide.createIcons(); // Recria os ícones injetados
+        }
+
+        // --- MODAL & CAROUSEL ---
+        let currentImages = [];
+        let currentIndex = 0;
+
+        function openModalFromData(index, filter) {
+            const data = filter === "Todos" ? projectDatabase : projectDatabase.filter(item => item.filter === filter);
+            const project = data[index];
+
+            currentImages = project.images;
+            currentIndex = 0;
+
+            document.getElementById('modal-title').innerText = project.title;
+            document.getElementById('modal-category').innerText = project.category;
+            document.getElementById('modal-desc').innerText = project.description;
+
+            updateCarousel();
+            document.getElementById('project-modal').classList.remove('hidden');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function updateCarousel() {
+            const img = document.getElementById('modal-img');
+            img.style.opacity = '0';
+            setTimeout(() => {
+                img.src = currentImages[currentIndex];
+                img.style.opacity = '1';
+                document.getElementById('current-page').innerText = currentIndex + 1;
+                document.getElementById('total-pages').innerText = currentImages.length;
+                document.getElementById('carousel-controls').style.display = currentImages.length > 1 ? 'flex' : 'none';
+            }, 150);
+        }
+
+        function nextImage() { currentIndex = (currentIndex + 1) % currentImages.length; updateCarousel(); }
+        function prevImage() { currentIndex = (currentIndex - 1 + currentImages.length) % currentImages.length; updateCarousel(); }
+        function closeModal() { 
+            document.getElementById('project-modal').classList.add('hidden'); 
+            document.body.style.overflow = 'auto';
+        }
+
+        // --- FILTROS ---
+        document.querySelectorAll('.filter-tag').forEach(tag => {
+            tag.addEventListener('click', () => {
+                document.querySelectorAll('.filter-tag').forEach(t => t.classList.remove('active'));
+                tag.classList.add('active');
+                renderGallery(tag.dataset.filter);
+            });
+        });
+
+        // Inicialização
+        window.onload = () => {
+            renderGallery();
+            lucide.createIcons();
+        };
+
+        window.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') closeModal();
+            if (e.key === 'ArrowRight') nextImage();
+            if (e.key === 'ArrowLeft') prevImage();
+        });
     </script>
 </body>
 </html>
