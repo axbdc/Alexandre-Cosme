@@ -1,0 +1,539 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AR Assets Showcase | Alexandre Cosme</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Space+Grotesk:wght@300;500;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #030303;
+            --accent: #ffffff;
+            --border: rgba(255, 255, 255, 0.07);
+        }
+
+        html { scroll-behavior: smooth; cursor: none; } 
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg);
+            color: #ffffff;
+            margin: 0;
+            overflow-x: hidden;
+            background: radial-gradient(circle at 50% 50%, #0a0a0a 0%, #030303 100%);
+        }
+
+        h1, h2, h3, h4 { font-family: 'Space Grotesk', sans-serif; text-transform: uppercase; }
+
+        /* --- CAMADAS TECNOLÓGICAS --- */
+        #hero-3d-wrapper {
+            position: relative;
+            width: 100%;
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+
+        #hero-3d-container {
+            position: absolute;
+            inset: 0;
+            z-index: 10;
+            pointer-events: auto;
+        }
+
+        .hero-text-overlay {
+            position: relative;
+            z-index: 20;
+            pointer-events: none;
+            text-align: center;
+        }
+
+        .hero-title-stroke {
+            -webkit-text-stroke: 1px rgba(255, 255, 255, 0.1);
+            color: transparent;
+            line-height: 0.8;
+            transition: all 0.5s ease;
+        }
+
+        #bg-canvas {
+            position: fixed;
+            inset: 0;
+            z-index: -1;
+            opacity: 0.3;
+        }
+
+        .noise {
+            position: fixed;
+            inset: 0;
+            width: 100%; height: 100%;
+            opacity: 0.02; z-index: 50;
+            pointer-events: none;
+            background-image: url('https://grainy-gradients.vercel.app/noise.svg');
+        }
+
+        /* Grelha técnica ativada por Scroll */
+        .blueprint-grid {
+            position: fixed;
+            inset: 0;
+            background-image: 
+                linear-gradient(var(--border) 1px, transparent 1px),
+                linear-gradient(90deg, var(--border) 1px, transparent 1px);
+            background-size: 50px 50px;
+            z-index: -2;
+            pointer-events: none;
+            mask-image: radial-gradient(circle at var(--mouse-x, 50%) var(--mouse-y, 50%), black 0%, transparent 50%);
+            -webkit-mask-image: radial-gradient(circle at var(--mouse-x, 50%) var(--mouse-y, 50%), black 0%, transparent 50%);
+            opacity: 0;
+            transition: opacity 1s ease;
+        }
+
+        .grid-active .blueprint-grid { opacity: 1; }
+
+        /* --- HUD --- */
+        .hud-line {
+            position: fixed;
+            background: rgba(255, 255, 255, 0.05);
+            z-index: 40;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.5s ease;
+        }
+        .grid-active .hud-line { opacity: 1; }
+        .hud-h { width: 100%; height: 1px; top: var(--mouse-y, 0); }
+        .hud-v { height: 100%; width: 1px; left: var(--mouse-x, 0); }
+
+        /* --- CURSOR --- */
+        #tech-cursor {
+            width: 30px; height: 30px;
+            border: 1px solid rgba(255,255,255,0.2);
+            position: fixed;
+            pointer-events: none;
+            z-index: 1000;
+            transform: translate(-50%, -50%);
+            display: flex; align-items: center; justify-content: center;
+        }
+        #tech-cursor::after { content: ''; width: 2px; height: 2px; background: #fff; }
+
+        /* --- CARDS DA GALERIA --- */
+        .asset-card {
+            border: 1px solid var(--border);
+            background: rgba(255, 255, 255, 0.02);
+            backdrop-filter: blur(10px);
+            transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+            cursor: pointer;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+        .asset-card:hover {
+            border-color: rgba(255,255,255,0.3);
+            transform: translateY(-10px);
+            background: rgba(255, 255, 255, 0.04);
+        }
+
+        .social-link {
+            transition: all 0.3s ease;
+            color: #555;
+        }
+        .social-link:hover {
+            color: #fff;
+            transform: translateY(-3px);
+        }
+
+        /* --- MODAL --- */
+        #project-modal { transition: opacity 0.4s ease; }
+        #modal-3d-stage { width: 100%; height: 100%; cursor: grab; }
+        #modal-3d-stage:active { cursor: grabbing; }
+
+        .reveal { opacity: 0; transform: translateY(30px); transition: 1s cubic-bezier(0.16, 1, 0.3, 1); }
+        .reveal.active { opacity: 1; transform: translateY(0); }
+
+        /* Scrollbar modal */
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: rgba(0,0,0,0.2); }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 10px; }
+    </style>
+</head>
+<body class="selection:bg-white selection:text-black">
+
+    <div id="tech-cursor"></div>
+    <div class="hud-line hud-h" id="hud-h"></div>
+    <div class="hud-line hud-v" id="hud-v"></div>
+    <canvas id="bg-canvas"></canvas>
+    <div class="blueprint-grid" id="grid"></div>
+    <div class="noise"></div>
+
+    <!-- NAVEGAÇÃO -->
+    <header class="fixed top-0 w-full z-[100] p-8 flex justify-between items-center transition-all duration-500" id="main-nav">
+        <a href="index.html" class="flex items-center gap-4 group">
+            <div class="w-10 h-10 border border-white/10 flex items-center justify-center group-hover:bg-white group-hover:text-black transition-all">
+                <i data-lucide="arrow-left" size="16"></i>
+            </div>
+            <span class="text-[9px] font-bold uppercase tracking-widest italic text-white/50 group-hover:text-white transition">Return_Home</span>
+        </a>
+        <div class="text-[9px] font-bold text-zinc-600 uppercase tracking-[0.5em] hidden md:block">
+            X_COORD: <span id="coord-x" class="text-white">0</span> // Y_COORD: <span id="coord-y" class="text-white">0</span>
+        </div>
+    </header>
+
+    <!-- HERO SECTION: 3D + TITULO INTEGRADO -->
+    <section id="hero-3d-wrapper">
+        <div id="hero-3d-container"></div>
+        <div class="hero-text-overlay">
+            <span class="text-[9px] font-bold text-white/20 tracking-[1em] mb-8 block uppercase">Technical Showcase</span>
+            <h1 class="text-7xl md:text-[180px] font-bold tracking-tighter uppercase mb-6">
+                AR <br> <span class="hero-title-stroke italic font-light">Assets.</span>
+            </h1>
+            <p class="text-zinc-600 text-xs md:text-sm tracking-[0.3em] font-medium uppercase max-w-xl mx-auto">
+                Exploração de volume, malha e profundidade técnica.
+            </p>
+        </div>
+    </section>
+
+    <!-- CONTEÚDO (GALERIA UNIFORME) -->
+    <main class="relative z-10">
+        <section class="max-w-7xl mx-auto px-8 py-40">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                
+                <!-- Item 01 -->
+                <div class="asset-card rounded-3xl p-6 group reveal" onclick="openModal('Hydra Core', 'AR_001', 'Otimização de hardsurface para visualização mobile e WebGL.', '18.2k')">
+                    <div class="aspect-video overflow-hidden rounded-2xl relative bg-zinc-900">
+                        <img src="https://images.unsplash.com/photo-1633356122544-f134324a6cee?q=80&w=1200" class="w-full h-full object-cover opacity-40 group-hover:opacity-100 transition-all duration-1000 group-hover:scale-105">
+                        <div class="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                            <span class="px-6 py-2 bg-white text-black text-[9px] font-bold uppercase tracking-widest">Analyze_Mesh</span>
+                        </div>
+                    </div>
+                    <div class="mt-8 px-2">
+                        <span class="text-[8px] font-bold text-zinc-700 uppercase tracking-widest mb-1 block">Ref. 001_HC</span>
+                        <h3 class="text-xl font-bold italic uppercase">Hydra Core</h3>
+                    </div>
+                </div>
+
+                <!-- Item 02 -->
+                <div class="asset-card rounded-3xl p-6 group reveal" onclick="openModal('Synapse Node', 'AR_002', 'Estrutura orgânica processada para realidade mista.', '9.1k')">
+                    <div class="aspect-video overflow-hidden rounded-2xl relative bg-zinc-900">
+                        <img src="https://images.unsplash.com/photo-1614850523296-d8c1af93d400?q=80&w=1200" class="w-full h-full object-cover opacity-40 group-hover:opacity-100 transition-all">
+                        <div class="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                            <span class="px-6 py-2 bg-white text-black text-[9px] font-bold uppercase tracking-widest">Analyze_Mesh</span>
+                        </div>
+                    </div>
+                    <div class="mt-8 px-2">
+                        <span class="text-[8px] font-bold text-zinc-700 uppercase tracking-widest mb-1 block italic">Ref. 002_SN</span>
+                        <h3 class="text-xl font-bold italic uppercase">Synapse Node</h3>
+                    </div>
+                </div>
+
+                <!-- Item 03 -->
+                <div class="asset-card rounded-3xl p-6 group reveal" onclick="openModal('Nexus Frame', 'AR_003', 'Estudo de topologia para integração em Unreal Engine.', '14.5k')">
+                    <div class="aspect-video overflow-hidden rounded-2xl relative bg-zinc-900">
+                        <img src="https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=1200" class="w-full h-full object-cover opacity-40 group-hover:opacity-100 transition-all">
+                        <div class="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                            <span class="px-6 py-2 bg-white text-black text-[9px] font-bold uppercase tracking-widest">Analyze_Mesh</span>
+                        </div>
+                    </div>
+                    <div class="mt-8 px-2">
+                        <span class="text-[8px] font-bold text-zinc-700 uppercase tracking-widest mb-1 block">Ref. 003_NF</span>
+                        <h3 class="text-xl font-bold italic uppercase">Nexus Frame</h3>
+                    </div>
+                </div>
+
+                <!-- Item 04 -->
+                <div class="asset-card rounded-3xl p-6 group reveal" onclick="openModal('Aero Wing', 'AR_004', 'Modelo aeroespacial otimizado.', '22.1k')">
+                    <div class="aspect-video overflow-hidden rounded-2xl relative bg-zinc-900">
+                        <img src="https://images.unsplash.com/photo-1558591710-4b4a1ae0f04d?q=80&w=1200" class="w-full h-full object-cover opacity-40 group-hover:opacity-100 transition-all">
+                        <div class="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                            <span class="px-6 py-2 bg-white text-black text-[9px] font-bold uppercase tracking-widest">Analyze_Mesh</span>
+                        </div>
+                    </div>
+                    <div class="mt-8 px-2">
+                        <span class="text-[8px] font-bold text-zinc-700 uppercase tracking-widest mb-1 block">Ref. 004_AW</span>
+                        <h3 class="text-xl font-bold italic uppercase">Aero Wing</h3>
+                    </div>
+                </div>
+
+                <!-- Item 05 -->
+                <div class="asset-card rounded-3xl p-6 group reveal" onclick="openModal('Titan Module', 'AR_005', 'Módulo industrial PBR.', '35.8k')">
+                    <div class="aspect-video overflow-hidden rounded-2xl relative bg-zinc-900">
+                        <img src="https://images.unsplash.com/photo-1620641788421-7a1c342ea42e?q=80&w=1200" class="w-full h-full object-cover opacity-40 group-hover:opacity-100 transition-all">
+                        <div class="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                            <span class="px-6 py-2 bg-white text-black text-[9px] font-bold uppercase tracking-widest">Analyze_Mesh</span>
+                        </div>
+                    </div>
+                    <div class="mt-8 px-2">
+                        <span class="text-[8px] font-bold text-zinc-700 uppercase tracking-widest mb-1 block">Ref. 005_TM</span>
+                        <h3 class="text-xl font-bold italic uppercase">Titan Module</h3>
+                    </div>
+                </div>
+
+                <!-- Item 06 -->
+                <div class="asset-card rounded-3xl p-6 group reveal" onclick="openModal('Orbital Sensor', 'AR_006', 'Sensor ótico VR.', '12.9k')">
+                    <div class="aspect-video overflow-hidden rounded-2xl relative bg-zinc-900">
+                        <img src="https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=1200" class="w-full h-full object-cover opacity-40 group-hover:opacity-100 transition-all">
+                        <div class="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                            <span class="px-6 py-2 bg-white text-black text-[9px] font-bold uppercase tracking-widest">Analyze_Mesh</span>
+                        </div>
+                    </div>
+                    <div class="mt-8 px-2">
+                        <span class="text-[8px] font-bold text-zinc-700 uppercase tracking-widest mb-1 block">Ref. 006_OS</span>
+                        <h3 class="text-xl font-bold italic uppercase">Orbital Sensor</h3>
+                    </div>
+                </div>
+                
+                <div class="asset-card rounded-3xl p-6 group reveal" onclick="openModal('Void Gate', 'AR_007', 'Arquitetura imersiva.', '28k')">
+                    <div class="aspect-video overflow-hidden rounded-2xl relative bg-zinc-900">
+                        <img src="https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?q=80&w=1200" class="w-full h-full object-cover opacity-40 group-hover:opacity-100">
+                    </div>
+                    <div class="mt-8 px-2"><h3 class="text-xl font-bold italic uppercase">Void Gate</h3></div>
+                </div>
+                <div class="asset-card rounded-3xl p-6 group reveal" onclick="openModal('Pulse Engine', 'AR_008', 'Motor otimizado.', '44k')">
+                    <div class="aspect-video overflow-hidden rounded-2xl relative bg-zinc-900">
+                        <img src="https://images.unsplash.com/photo-1581092160607-ee22621dd758?q=80&w=1200" class="w-full h-full object-cover opacity-40 group-hover:opacity-100">
+                    </div>
+                    <div class="mt-8 px-2"><h3 class="text-xl font-bold italic uppercase">Pulse Engine</h3></div>
+                </div>
+                <div class="asset-card rounded-3xl p-6 group reveal" onclick="openModal('Signal Tower', 'AR_009', 'Telecomunicações.', '16k')">
+                    <div class="aspect-video overflow-hidden rounded-2xl relative bg-zinc-900">
+                        <img src="https://images.unsplash.com/photo-1518770660439-4636190af475?q=80&w=1200" class="w-full h-full object-cover opacity-40 group-hover:opacity-100">
+                    </div>
+                    <div class="mt-8 px-2"><h3 class="text-xl font-bold italic uppercase">Signal Tower</h3></div>
+                </div>
+                <div class="asset-card rounded-3xl p-6 group reveal" onclick="openModal('Micro-Bot', 'AR_010', 'Robótica.', '8k')">
+                    <div class="aspect-video overflow-hidden rounded-2xl relative bg-zinc-900">
+                        <img src="https://images.unsplash.com/photo-1535375972991-48456e1c4e28?q=80&w=1200" class="w-full h-full object-cover opacity-40 group-hover:opacity-100">
+                    </div>
+                    <div class="mt-8 px-2"><h3 class="text-xl font-bold italic uppercase">Micro-Bot</h3></div>
+                </div>
+                <div class="asset-card rounded-3xl p-6 group reveal" onclick="openModal('Data Node', 'AR_011', 'Fluxo de dados.', '11k')">
+                    <div class="aspect-video overflow-hidden rounded-2xl relative bg-zinc-900">
+                        <img src="https://images.unsplash.com/photo-1550751827-4bd374c3f58b?q=80&w=1200" class="w-full h-full object-cover opacity-40 group-hover:opacity-100">
+                    </div>
+                    <div class="mt-8 px-2"><h3 class="text-xl font-bold italic uppercase">Data Node</h3></div>
+                </div>
+                <div class="asset-card rounded-3xl p-6 group reveal" onclick="openModal('Relic 3D', 'AR_012', 'Digitalização técnica.', '19k')">
+                    <div class="aspect-video overflow-hidden rounded-2xl relative bg-zinc-900">
+                        <img src="https://images.unsplash.com/photo-1531297484001-80022131f5a1?q=80&w=1200" class="w-full h-full object-cover opacity-40 group-hover:opacity-100">
+                    </div>
+                    <div class="mt-8 px-2"><h3 class="text-xl font-bold italic uppercase">Relic 3D</h3></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- FOOTER (Apenas a secção Connect para baixo) -->
+        <footer id="contacto" class="max-w-7xl mx-auto px-8 py-32 border-t border-zinc-900 relative z-20">
+            <div class="grid md:grid-cols-2 gap-20 items-start">
+                <div class="reveal">
+                    <span class="text-[10px] font-bold text-zinc-700 tracking-[0.5em] mb-12 block uppercase">05 / CONTACTO</span>
+                    <h2 class="text-7xl font-bold tracking-tighter mb-16 uppercase italic">Connect.</h2>
+                    <div class="space-y-12">
+                        <div>
+                            <p class="text-zinc-600 text-[10px] font-bold uppercase tracking-widest mb-4 italic">Get in touch</p>
+                            <a href="mailto:alexandrexbdcosme@gmail.com" class="text-2xl md:text-3xl font-light hover:text-white transition-all border-b border-zinc-800 pb-2">
+                                alexandrexbdcosme@gmail.com
+                            </a>
+                        </div>
+                        <div class="flex flex-col gap-2">
+                            <p class="text-lg font-medium text-zinc-400">Ribamar • Ericeira • Lisboa</p>
+                            <p class="text-sm text-zinc-500 italic">(+351) 933 059 987</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="flex flex-col md:items-end justify-end reveal h-full pt-10 md:pt-40">
+                    <p class="text-zinc-600 text-[10px] font-bold uppercase tracking-widest mb-8 italic">Follow the work</p>
+                    <div class="flex gap-10 items-center">
+                        <a href="https://linkedin.com/in/alexandre-cosme-857a59198/" target="_blank" class="social-link">
+                            <i data-lucide="linkedin" size="24"></i>
+                        </a>
+                        <a href="#" class="social-link">
+                            <i data-lucide="instagram" size="24"></i>
+                        </a>
+                        <a href="#" class="social-link">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 12H3"/><path d="M12 7H3a2 2 0 1 0 0 4 2 2 0 1 0 0 4h9V7Z"/><path d="M17 12a3 3 0 1 0 0 6 3 3 0 1 0 0-6Z"/><path d="M15 9h4"/></svg>
+                        </a>
+                    </div>
+                    <div class="mt-20 text-right opacity-20 italic text-[8px] tracking-[0.4em] font-bold uppercase">
+                        Alexandre Cosme Portfolio • 2024
+                    </div>
+                </div>
+            </div>
+        </footer>
+    </main>
+
+    <!-- MODAL 3D VIEWER -->
+    <div id="project-modal" class="fixed inset-0 z-[200] flex items-center justify-center p-4 md:p-10 hidden">
+        <div class="absolute inset-0 bg-black/95 backdrop-blur-2xl" onclick="closeModal()"></div>
+        <div class="relative w-full max-w-6xl bg-zinc-950 border border-white/10 rounded-3xl overflow-hidden shadow-2xl flex flex-col md:flex-row h-full max-h-[85vh]">
+            <div class="relative w-full md:w-2/3 h-80 md:h-auto bg-black">
+                <div id="modal-3d-stage"></div>
+                <div class="absolute top-6 left-6 flex gap-3">
+                    <button id="btn-shaded" onclick="setRenderMode('shaded')" class="px-4 py-1.5 bg-white text-black text-[8px] font-bold uppercase rounded-full shadow-lg">Solid</button>
+                    <button id="btn-wire" onclick="setRenderMode('wire')" class="px-4 py-1.5 bg-white/5 border border-white/10 text-white/50 text-[8px] font-bold uppercase rounded-full hover:text-white transition shadow-lg">Wireframe</button>
+                </div>
+            </div>
+            <div class="w-full md:w-1/3 p-10 flex flex-col bg-zinc-950 border-l border-white/5">
+                <div class="flex justify-between mb-10">
+                    <span id="modal-id" class="text-[9px] font-bold text-zinc-600 tracking-[0.4em]">ASSET_ID_3D</span>
+                    <button onclick="closeModal()" class="text-zinc-500 hover:text-white transition-colors"><i data-lucide="x" size="20"></i></button>
+                </div>
+                <h2 id="modal-title" class="text-3xl font-bold tracking-tighter mb-6 italic">Asset Name</h2>
+                <div class="w-8 h-[1px] bg-white/20 mb-8"></div>
+                <div class="flex-grow overflow-y-auto custom-scrollbar pr-2 mb-8">
+                    <p id="modal-desc" class="text-zinc-500 text-sm leading-relaxed font-light">Exploração técnica e detalhamento volumétrico.</p>
+                </div>
+                <div class="space-y-4 mt-auto">
+                    <div class="flex justify-between text-[10px] border-b border-white/5 pb-2">
+                        <span class="text-zinc-600 uppercase font-bold">Polygon Count</span>
+                        <span id="modal-faces" class="text-white">---</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        lucide.createIcons();
+
+        let mouseX = 0, mouseY = 0;
+        let windowHalfX = window.innerWidth / 2;
+        let windowHalfY = window.innerHeight / 2;
+
+        // --- HERO 3D ---
+        let heroScene, heroCamera, heroRenderer, heroMesh;
+        function initHero3D() {
+            heroScene = new THREE.Scene();
+            heroCamera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            heroCamera.position.z = 4.5;
+            heroRenderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+            heroRenderer.setSize(window.innerWidth, window.innerHeight);
+            document.getElementById('hero-3d-container').appendChild(heroRenderer.domElement);
+            const geo = new THREE.TorusKnotGeometry(1.6, 0.45, 150, 20);
+            const mat = new THREE.MeshStandardMaterial({ color: 0xffffff, wireframe: true, transparent: true, opacity: 0.12 });
+            heroMesh = new THREE.Mesh(geo, mat);
+            heroScene.add(heroMesh);
+            
+            const light = new THREE.PointLight(0xffffff, 1);
+            light.position.set(10, 10, 10);
+            heroScene.add(light);
+            heroScene.add(new THREE.AmbientLight(0xffffff, 0.2));
+        }
+
+        // --- BACKGROUND PARTICLES ---
+        let bgScene, bgCamera, bgRenderer, particles;
+        function initBG() {
+            bgScene = new THREE.Scene();
+            bgCamera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            bgCamera.position.z = 1;
+            bgRenderer = new THREE.WebGLRenderer({ canvas: document.getElementById('bg-canvas'), antialias: true, alpha: true });
+            bgRenderer.setSize(window.innerWidth, window.innerHeight);
+            const pGeo = new THREE.BufferGeometry();
+            const pCount = 1000;
+            const pPos = new Float32Array(pCount * 3);
+            for(let i=0; i<pCount*3; i++) pPos[i] = (Math.random() - 0.5) * 5;
+            pGeo.setAttribute('position', new THREE.BufferAttribute(pPos, 3));
+            particles = new THREE.Points(pGeo, new THREE.PointsMaterial({ size: 0.002, color: 0xffffff, transparent: true, opacity: 0.15 }));
+            bgScene.add(particles);
+        }
+
+        // --- MODAL 3D VIEWER ---
+        let mScene, mCamera, mRenderer, mMesh, mIsDragging = false, mPrevMouse = {x:0, y:0};
+        const mStage = document.getElementById('modal-3d-stage');
+        function initModal3D() {
+            mScene = new THREE.Scene();
+            mCamera = new THREE.PerspectiveCamera(45, mStage.clientWidth / mStage.clientHeight, 0.1, 1000);
+            mCamera.position.z = 4;
+            mRenderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+            mRenderer.setSize(mStage.clientWidth, mStage.clientHeight);
+            mStage.appendChild(mRenderer.domElement);
+            mMesh = new THREE.Mesh(new THREE.IcosahedronGeometry(1.5, 2), new THREE.MeshStandardMaterial({ color: 0xffffff, wireframe: false }));
+            mScene.add(mMesh);
+            mScene.add(new THREE.AmbientLight(0xffffff, 0.5));
+            const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
+            directionalLight.position.set(5, 5, 5);
+            mScene.add(directionalLight);
+            mStage.addEventListener('mousedown', () => mIsDragging = true);
+            window.addEventListener('mouseup', () => mIsDragging = false);
+            window.addEventListener('mousemove', (e) => {
+                if(!mIsDragging || !mMesh) return;
+                mMesh.rotation.y += (e.clientX - mPrevMouse.x) * 0.01;
+                mMesh.rotation.x += (e.clientY - mPrevMouse.y) * 0.01;
+                mPrevMouse = {x: e.clientX, y: e.clientY};
+            });
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            const time = Date.now() * 0.0005;
+            if(heroMesh) {
+                heroMesh.rotation.y += 0.004;
+                heroMesh.rotation.x += 0.001;
+                const s = window.scrollY;
+                heroMesh.scale.set(Math.max(0.1, 1 - s/1000), Math.max(0.1, 1 - s/1000), Math.max(0.1, 1 - s/1000));
+                heroMesh.position.y = -(mouseY - windowHalfY) * 0.0002 - (s * 0.001);
+            }
+            if(particles) particles.rotation.y = time * 0.05;
+            if(mMesh && !mIsDragging) mMesh.rotation.y += 0.005;
+            heroRenderer.render(heroScene, heroCamera);
+            bgRenderer.render(bgScene, bgCamera);
+            if(mRenderer) mRenderer.render(mScene, mCamera);
+        }
+
+        window.addEventListener('scroll', () => {
+            const s = window.scrollY;
+            if(s > window.innerHeight * 0.4) {
+                document.body.classList.add('grid-active');
+                document.getElementById('main-nav').classList.add('bg-black/60', 'backdrop-blur-md');
+            } else {
+                document.body.classList.remove('grid-active');
+                document.getElementById('main-nav').classList.remove('bg-black/60', 'backdrop-blur-md');
+            }
+        });
+
+        window.addEventListener('mousemove', (e) => {
+            mouseX = e.clientX; mouseY = e.clientY;
+            document.getElementById('grid').style.setProperty('--mouse-x', mouseX + 'px');
+            document.getElementById('grid').style.setProperty('--mouse-y', mouseY + 'px');
+            document.getElementById('hud-h').style.setProperty('--mouse-y', mouseY + 'px');
+            document.getElementById('hud-v').style.setProperty('--mouse-x', mouseX + 'px');
+            document.getElementById('tech-cursor').style.left = mouseX + 'px';
+            document.getElementById('tech-cursor').style.top = mouseY + 'px';
+            document.getElementById('coord-x').innerText = mouseX;
+            document.getElementById('coord-y').innerText = mouseY;
+            if(!mIsDragging) mPrevMouse = {x: e.clientX, y: e.clientY};
+        });
+
+        function openModal(title, id, desc, faces) {
+            document.getElementById('modal-title').innerText = title;
+            document.getElementById('modal-id').innerText = id;
+            document.getElementById('modal-desc').innerText = desc;
+            document.getElementById('modal-faces').innerText = faces;
+            document.getElementById('project-modal').classList.remove('hidden');
+            document.body.style.overflow = 'hidden';
+            if(!mRenderer) initModal3D();
+        }
+
+        function closeModal() {
+            document.getElementById('project-modal').classList.add('hidden');
+            document.body.style.overflow = 'auto';
+        }
+
+        function setRenderMode(mode) {
+            if(!mMesh) return;
+            const isWire = mode === 'wire';
+            mMesh.material.wireframe = isWire;
+            document.getElementById('btn-shaded').className = isWire ? "px-4 py-1.5 bg-white/5 border border-white/10 text-white/50 text-[8px] font-bold uppercase rounded-full shadow-lg" : "px-4 py-1.5 bg-white text-black text-[8px] font-bold uppercase rounded-full shadow-lg";
+            document.getElementById('btn-wire').className = !isWire ? "px-4 py-1.5 bg-white/5 border border-white/10 text-white/50 text-[8px] font-bold uppercase rounded-full hover:text-white transition shadow-lg" : "px-4 py-1.5 bg-white text-black text-[8px] font-bold uppercase rounded-full shadow-lg";
+        }
+
+        initHero3D(); initBG(); animate();
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => { if (entry.isIntersecting) entry.target.classList.add('active'); });
+        }, { threshold: 0.1 });
+        document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+    </script>
+</body>
+</html>
