@@ -47,6 +47,8 @@
             inset: 0;
             z-index: 10;
             pointer-events: auto;
+            opacity: 0; /* Começa invisível para evitar o "salto" visual */
+            transition: opacity 1.2s ease-out; /* Fade-in suave quando o modelo carregar */
         }
 
         .hero-text-overlay {
@@ -399,15 +401,9 @@
                 <div class="flex flex-col md:items-end justify-end reveal h-full pt-10 md:pt-40">
                     <p class="text-zinc-600 text-[10px] font-bold uppercase tracking-widest mb-8 italic">Follow the work</p>
                     <div class="flex gap-10 items-center">
-                        <a href="https://linkedin.com/in/alexandre-cosme-857a59198/" target="_blank" class="social-link">
-                            <i data-lucide="linkedin" size="24"></i>
-                        </a>
-                        <a href="#" class="social-link">
-                            <i data-lucide="instagram" size="24"></i>
-                        </a>
-                        <a href="#" class="social-link">
-                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 12H3"/><path d="M12 7H3a2 2 0 1 0 0 4 2 2 0 1 0 0 4h9V7Z"/><path d="M17 12a3 3 0 1 0 0 6 3 3 0 1 0 0-6Z"/><path d="M15 9h4"/></svg>
-                        </a>
+                        <a href="https://linkedin.com/in/alexandre-cosme-857a59198/" target="_blank" class="social-link"><i data-lucide="linkedin" size="24"></i></a>
+                        <a href="#" class="social-link"><i data-lucide="instagram" size="24"></i></a>
+                        <a href="#" class="social-link"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 12H3"/><path d="M12 7H3a2 2 0 1 0 0 4 2 2 0 1 0 0 4h9V7Z"/><path d="M17 12a3 3 0 1 0 0 6 3 3 0 1 0 0-6Z"/><path d="M15 9h4"/></svg></a>
                     </div>
                     <div class="mt-20 text-right opacity-20 italic text-[8px] tracking-[0.4em] font-bold uppercase">
                         Alexandre Cosme Portfolio • 2024
@@ -486,9 +482,10 @@
             heroRenderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
             heroRenderer.setSize(window.innerWidth, window.innerHeight);
             heroRenderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-            document.getElementById('hero-3d-container').appendChild(heroRenderer.domElement);
+            const container = document.getElementById('hero-3d-container');
+            container.appendChild(heroRenderer.domElement);
 
-            // Adicionar o "Back Glow" (Aura atrás do modelo)
+            // Aura de brilho atrás
             const glowGeo = new THREE.PlaneGeometry(8, 8);
             const glowMat = new THREE.MeshBasicMaterial({
                 map: createGlowTexture(),
@@ -498,20 +495,19 @@
                 depthWrite: false
             });
             glowMesh = new THREE.Mesh(glowGeo, glowMat);
-            glowMesh.position.z = -1.5; // Posicionado atrás do modelo
+            glowMesh.position.z = -1.5;
             heroScene.add(glowMesh);
 
-            // Luzes de Estúdio Aumentadas
+            // Iluminação
             const ambientLight = new THREE.AmbientLight(0xffffff, 0.4);
             heroScene.add(ambientLight);
 
-            // Luzes de Contorno (Rim Lighting) para destacar a câmara preta
             const rimLight1 = new THREE.DirectionalLight(0xffffff, 2.5);
-            rimLight1.position.set(-5, 5, -5); // Luz de trás-esquerda
+            rimLight1.position.set(-5, 5, -5);
             heroScene.add(rimLight1);
 
             const rimLight2 = new THREE.DirectionalLight(0xffffff, 2.5);
-            rimLight2.position.set(5, 5, -5); // Luz de trás-direita
+            rimLight2.position.set(5, 5, -5);
             heroScene.add(rimLight2);
 
             const directLight = new THREE.DirectionalLight(0xffffff, 1.2);
@@ -520,7 +516,47 @@
 
             loader = new THREE.GLTFLoader();
 
-            // 1. CRIAR O MODELO DE FALLBACK IMEDIATAMENTE (O TorusKnot)
+            // LÓGICA DE CARREGAMENTO MELHORADA
+            const isBlob = window.location.protocol === 'blob:';
+            const isRelative = MY_MODEL_URL && !MY_MODEL_URL.includes('://') && !MY_MODEL_URL.startsWith('data:');
+
+            if (isBlob && isRelative) {
+                // Se estivermos no Canvas Preview, usamos o fallback imediatamente
+                setupFallback();
+                showContainer();
+            } else if (MY_MODEL_URL) {
+                loader.load(
+                    MY_MODEL_URL,
+                    function (gltf) {
+                        heroModel = gltf.scene;
+                        const box = new THREE.Box3().setFromObject(heroModel);
+                        const center = box.getCenter(new THREE.Vector3());
+                        const size = box.getSize(new THREE.Vector3());
+                        
+                        // Centralização e Escala
+                        heroModel.position.x += (heroModel.position.x - center.x);
+                        heroModel.position.y += (heroModel.position.y - center.y);
+                        heroModel.position.z += (heroModel.position.z - center.z);
+                        
+                        const maxDim = Math.max(size.x, size.y, size.z);
+                        const scale = 3.5 / maxDim; 
+                        heroModel.scale.set(scale, scale, scale);
+                        
+                        heroScene.add(heroModel);
+                        showContainer(); // Só mostra o contentor quando o modelo está pronto
+                    },
+                    undefined,
+                    function (error) {
+                        console.warn('Erro no GLB. Ativando fallback.');
+                        setupFallback();
+                        showContainer();
+                    }
+                );
+            }
+        }
+
+        // Função para preparar a geometria de reserva (Torus)
+        function setupFallback() {
             const fallbackGeo = new THREE.TorusKnotGeometry(1.6, 0.45, 150, 20);
             const fallbackMat = new THREE.MeshStandardMaterial({ 
                 color: 0xffffff, 
@@ -530,49 +566,11 @@
             });
             heroModel = new THREE.Mesh(fallbackGeo, fallbackMat);
             heroScene.add(heroModel);
+        }
 
-            // 2. TENTAR CARREGAR O TEU GLB COM SEGURANÇA
-            const isBlob = window.location.protocol === 'blob:';
-            const isRelative = MY_MODEL_URL && !MY_MODEL_URL.includes('://') && !MY_MODEL_URL.startsWith('data:');
-
-            if (isBlob && isRelative) {
-                console.info('Canvas Preview: A usar geometria padrão devido a restrições de ficheiros locais.');
-                return;
-            }
-
-            if (MY_MODEL_URL) {
-                try {
-                    loader.load(
-                        MY_MODEL_URL,
-                        function (gltf) {
-                            heroScene.remove(heroModel);
-                            heroModel = gltf.scene;
-                            
-                            const box = new THREE.Box3().setFromObject(heroModel);
-                            const center = box.getCenter(new THREE.Vector3());
-                            const size = box.getSize(new THREE.Vector3());
-                            
-                            // --- AJUSTE DE POSIÇÃO BASE (Centralização) ---
-                            // Estas linhas garantem que o modelo fica no centro (0,0,0) inicialmente.
-                            heroModel.position.x += (heroModel.position.x - center.x);
-                            heroModel.position.y += (heroModel.position.y - center.y);
-                            heroModel.position.z += (heroModel.position.z - center.z);
-                            
-                            // --- AJUSTE DE TAMANHO (Escala) ---
-                            const maxDim = Math.max(size.x, size.y, size.z);
-                            // Aumenta ou diminui o número 3.5 abaixo para mudar o tamanho global do teu GLB.
-                            const scale = 4 / maxDim; 
-                            heroModel.scale.set(scale, scale, scale);
-                            
-                            heroScene.add(heroModel);
-                        },
-                        undefined,
-                        function (error) {
-                            console.warn('Ficheiro GLB não carregado. Fallback ativo.');
-                        }
-                    );
-                } catch (e) {}
-            }
+        // Função para mostrar o contentor com fade-in
+        function showContainer() {
+            document.getElementById('hero-3d-container').style.opacity = '1';
         }
 
         // --- BACKGROUND PARTICLES ---
@@ -625,17 +623,10 @@
             if(heroModel) {
                 heroModel.rotation.y += 0.004;
                 const s = window.scrollY;
-                
-                // --- AJUSTE DE POSIÇÃO DINÂMICA (Rato e Scroll) ---
-                // Para mudar a posição base do modelo no ecrã:
-                // No X (Horizontal): Podes somar/subtrair valores ao resultado final.
                 heroModel.position.x = (mouseX - windowHalfX) * 0.0001; 
-                
-                // No Y (Vertical): Podes ajustar o valor do scroll (s * 0.001) ou somar um valor fixo no fim.
-                // Exemplo: ... - (s * 0.001) + 1.5; (Para subir o modelo)
+                // Ajuste de posição vertical (puxado um pouco para baixo)
                 heroModel.position.y = -(mouseY - windowHalfY) * 0.0001 - (s * 0.001) - 0.8; 
 
-                // O glow mesh segue o modelo para manter o brilho centrado
                 if(glowMesh) {
                     glowMesh.position.x = heroModel.position.x;
                     glowMesh.position.y = heroModel.position.y;
