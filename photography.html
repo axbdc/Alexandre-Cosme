@@ -456,10 +456,27 @@
         let windowHalfY = window.innerHeight / 2;
 
         // --- HERO 3D COM CARREGAMENTO DINÂMICO ---
-        let heroScene, heroCamera, heroRenderer, heroModel, loader;
+        let heroScene, heroCamera, heroRenderer, heroModel, loader, glowMesh;
 
         // CAMINHO DO TEU MODELO NO REPOSITÓRIO
         const MY_MODEL_URL = 'canon_eos_5d_mark_iv.glb'; 
+
+        // Função para criar uma textura de brilho (glow) circular
+        function createGlowTexture() {
+            const canvas = document.createElement('canvas');
+            canvas.width = 512;
+            canvas.height = 512;
+            const context = canvas.getContext('2d');
+            const gradient = context.createRadialGradient(256, 256, 0, 256, 256, 256);
+            gradient.addColorStop(0, 'rgba(255, 255, 255, 0.4)'); // Brilho central
+            gradient.addColorStop(0.3, 'rgba(255, 255, 255, 0.1)');
+            gradient.addColorStop(1, 'rgba(255, 255, 255, 0)'); // Desvanece totalmente
+            context.fillStyle = gradient;
+            context.fillRect(0, 0, 512, 512);
+            const texture = new THREE.Texture(canvas);
+            texture.needsUpdate = true;
+            return texture;
+        }
 
         function initHero3D() {
             heroScene = new THREE.Scene();
@@ -471,17 +488,35 @@
             heroRenderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
             document.getElementById('hero-3d-container').appendChild(heroRenderer.domElement);
 
-            // Luzes de Estúdio (Ajustadas para GLB PBR)
-            const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+            // Adicionar o "Back Glow" (Aura atrás do modelo)
+            const glowGeo = new THREE.PlaneGeometry(8, 8);
+            const glowMat = new THREE.MeshBasicMaterial({
+                map: createGlowTexture(),
+                transparent: true,
+                blending: THREE.AdditiveBlending,
+                opacity: 0.25,
+                depthWrite: false
+            });
+            glowMesh = new THREE.Mesh(glowGeo, glowMat);
+            glowMesh.position.z = -1.5; // Posicionado atrás do modelo
+            heroScene.add(glowMesh);
+
+            // Luzes de Estúdio Aumentadas
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.4);
             heroScene.add(ambientLight);
 
-            const directLight = new THREE.DirectionalLight(0xffffff, 1.5);
+            // Luzes de Contorno (Rim Lighting) para destacar a câmara preta
+            const rimLight1 = new THREE.DirectionalLight(0xffffff, 2.5);
+            rimLight1.position.set(-5, 5, -5); // Luz de trás-esquerda
+            heroScene.add(rimLight1);
+
+            const rimLight2 = new THREE.DirectionalLight(0xffffff, 2.5);
+            rimLight2.position.set(5, 5, -5); // Luz de trás-direita
+            heroScene.add(rimLight2);
+
+            const directLight = new THREE.DirectionalLight(0xffffff, 1.2);
             directLight.position.set(5, 10, 7.5);
             heroScene.add(directLight);
-
-            const fillLight = new THREE.PointLight(0xffffff, 0.8);
-            fillLight.position.set(-5, 2, 2);
-            heroScene.add(fillLight);
 
             loader = new THREE.GLTFLoader();
 
@@ -497,14 +532,11 @@
             heroScene.add(heroModel);
 
             // 2. TENTAR CARREGAR O TEU GLB COM SEGURANÇA
-            // Em ambientes de Blob (Canvas Preview), caminhos relativos causam SyntaxError no XMLHttpRequest.
             const isBlob = window.location.protocol === 'blob:';
             const isRelative = MY_MODEL_URL && !MY_MODEL_URL.includes('://') && !MY_MODEL_URL.startsWith('data:');
 
             if (isBlob && isRelative) {
-                // Silenciamos o erro no modo de pré-visualização, mantendo o Torus ativo.
-                // Quando o site for publicado num servidor real, a câmara carregará normalmente.
-                console.info('Canvas Preview: Caminhos relativos para GLB bloqueados por segurança. A usar geometria padrão.');
+                console.info('Canvas Preview: A usar geometria padrão devido a restrições de ficheiros locais.');
                 return;
             }
 
@@ -532,12 +564,10 @@
                         },
                         undefined,
                         function (error) {
-                            console.warn('Ficheiro GLB não carregado: ' + MY_MODEL_URL + '. Fallback ativo.');
+                            console.warn('Ficheiro GLB não carregado. Fallback ativo.');
                         }
                     );
-                } catch (e) {
-                    // Erro capturado silenciosamente para evitar crash da aplicação no sandbox.
-                }
+                } catch (e) {}
             }
         }
 
@@ -593,6 +623,12 @@
                 const s = window.scrollY;
                 heroModel.position.x = (mouseX - windowHalfX) * 0.0001;
                 heroModel.position.y = -(mouseY - windowHalfY) * 0.0001 - (s * 0.001);
+
+                // O glow mesh segue o modelo para manter o brilho centrado
+                if(glowMesh) {
+                    glowMesh.position.x = heroModel.position.x;
+                    glowMesh.position.y = heroModel.position.y;
+                }
             }
             if(particles) particles.rotation.y = time * 0.05;
             if(mMesh && !mIsDragging) mMesh.rotation.y += 0.005;
