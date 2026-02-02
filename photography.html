@@ -633,7 +633,7 @@
                 
                 // No Y (Vertical): Podes ajustar o valor do scroll (s * 0.001) ou somar um valor fixo no fim.
                 // Exemplo: ... - (s * 0.001) + 1.5; (Para subir o modelo)
-                heroModel.position.y = -(mouseY - windowHalfY) * 0.0001 - (s * 0.001); 
+                heroModel.position.y = -(mouseY - windowHalfY) * 0.0001 - (s * 0.001) - 0.8; 
 
                 // O glow mesh segue o modelo para manter o brilho centrado
                 if(glowMesh) {
