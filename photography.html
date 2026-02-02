@@ -460,7 +460,7 @@
         let heroScene, heroCamera, heroRenderer, heroModel, loader;
 
         // CAMINHO DO TEU MODELO NO REPOSITÓRIO
-        const MY_MODEL_URL = './meu_modelo.glb'; 
+        const MY_MODEL_URL = 'canon_eos_5d_mark_iv.glb'; 
 
         function initHero3D() {
             heroScene = new THREE.Scene();
@@ -494,7 +494,7 @@
             heroScene.add(heroModel);
 
             // 2. TENTAR CARREGAR O TEU GLB COM SEGURANÇA
-            if (MY_MODEL_URL && MY_MODEL_URL !== './meu_modelo.glb') {
+            if (MY_MODEL_URL && MY_MODEL_URL !== 'canon_eos_5d_mark_iv.glb') {
                 try {
                     loader.load(
                         MY_MODEL_URL,
