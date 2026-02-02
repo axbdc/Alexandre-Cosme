@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Fotografia | Alexandre Cosme</title>
+    <title>AR Assets Showcase | Alexandre Cosme</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <!-- Three.js Core -->
@@ -149,7 +149,7 @@
 
         /* --- MODAL --- */
         #project-modal { transition: opacity 0.4s ease; }
-        #modal-3d-stage { width: 200%; height: 200%; cursor: grab; }
+        #modal-3d-stage { width: 100%; height: 100%; cursor: grab; }
         #modal-3d-stage:active { cursor: grabbing; }
 
         .reveal { opacity: 0; transform: translateY(30px); transition: 1s cubic-bezier(0.16, 1, 0.3, 1); }
@@ -552,12 +552,16 @@
                             const center = box.getCenter(new THREE.Vector3());
                             const size = box.getSize(new THREE.Vector3());
                             
+                            // --- AJUSTE DE POSIÇÃO BASE (Centralização) ---
+                            // Estas linhas garantem que o modelo fica no centro (0,0,0) inicialmente.
                             heroModel.position.x += (heroModel.position.x - center.x);
                             heroModel.position.y += (heroModel.position.y - center.y);
                             heroModel.position.z += (heroModel.position.z - center.z);
                             
+                            // --- AJUSTE DE TAMANHO (Escala) ---
                             const maxDim = Math.max(size.x, size.y, size.z);
-                            const scale = 3.5 / maxDim;
+                            // Aumenta ou diminui o número 3.5 abaixo para mudar o tamanho global do teu GLB.
+                            const scale = 3.5 / maxDim; 
                             heroModel.scale.set(scale, scale, scale);
                             
                             heroScene.add(heroModel);
@@ -621,8 +625,15 @@
             if(heroModel) {
                 heroModel.rotation.y += 0.004;
                 const s = window.scrollY;
-                heroModel.position.x = (mouseX - windowHalfX) * 0.0001;
-                heroModel.position.y = -(mouseY - windowHalfY) * 0.0001 - (s * 0.001);
+                
+                // --- AJUSTE DE POSIÇÃO DINÂMICA (Rato e Scroll) ---
+                // Para mudar a posição base do modelo no ecrã:
+                // No X (Horizontal): Podes somar/subtrair valores ao resultado final.
+                heroModel.position.x = (mouseX - windowHalfX) * 0.0001; 
+                
+                // No Y (Vertical): Podes ajustar o valor do scroll (s * 0.001) ou somar um valor fixo no fim.
+                // Exemplo: ... - (s * 0.001) + 1.5; (Para subir o modelo)
+                heroModel.position.y = -(mouseY - windowHalfY) * 0.0001 - (s * 0.001); 
 
                 // O glow mesh segue o modelo para manter o brilho centrado
                 if(glowMesh) {
