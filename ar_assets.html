@@ -112,7 +112,7 @@
         /* --- CURSOR --- */
         #tech-cursor {
             width: 30px; height: 30px;
-            border: 1px solid rgba(255,255,255,0.2);
+            border: 1px solid rgba(255, 255, 255, 0.2);
             position: fixed;
             pointer-events: none;
             z-index: 1000;
@@ -133,7 +133,7 @@
             flex-direction: column;
         }
         .asset-card:hover {
-            border-color: rgba(255,255,255,0.3);
+            border-color: rgba(255, 255, 255, 0.3);
             transform: translateY(-10px);
             background: rgba(255, 255, 255, 0.04);
         }
@@ -157,8 +157,8 @@
 
         /* Scrollbar modal */
         .custom-scrollbar::-webkit-scrollbar { width: 4px; }
-        .custom-scrollbar::-webkit-scrollbar-track { background: rgba(0,0,0,0.2); }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 10px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: rgba(0, 0, 0, 0.2); }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.1); border-radius: 10px; }
     </style>
 </head>
 <body class="selection:bg-white selection:text-black">
@@ -459,7 +459,9 @@
         let heroScene, heroCamera, heroRenderer, heroModel, loader;
 
         // CAMINHO DO TEU MODELO NO REPOSITÓRIO
-        const MY_MODEL_URL = './meu_modelo.glb'; 
+        // Nota: Substitui o URL abaixo pelo caminho real ou URL do teu ficheiro GLB.
+        // Se estiveres a testar localmente no Canvas, usa um URL completo (ex: https://...) para evitar erros de XHR.
+        const MY_MODEL_URL = 'canon_eos_5d_mark_iv.glb'; 
 
         function initHero3D() {
             heroScene = new THREE.Scene();
@@ -481,7 +483,7 @@
 
             loader = new THREE.GLTFLoader();
 
-            // 1. CRIAR O MODELO DE FALLBACK IMEDIATAMENTE (O TorusKnot das coordenadas)
+            // 1. CRIAR O MODELO DE FALLBACK IMEDIATAMENTE (O TorusKnot)
             const fallbackGeo = new THREE.TorusKnotGeometry(1.6, 0.45, 150, 20);
             const fallbackMat = new THREE.MeshStandardMaterial({ 
                 color: 0xffffff, 
@@ -493,11 +495,16 @@
             heroScene.add(heroModel);
 
             // 2. TENTAR CARREGAR O TEU GLB COM SEGURANÇA
-            if (MY_MODEL_URL && MY_MODEL_URL !== './meu_modelo.glb') {
+            // Validamos se o URL não é apenas o placeholder padrão antes de tentar o XHR
+            // para evitar o erro "Invalid URL" em ambientes de sandbox (blobs).
+            const isDefaultPath = MY_MODEL_URL === 'canon_eos_5d_mark_iv.glb' || MY_MODEL_URL === 'canon_eos_5d_mark_iv.glb';
+            
+            if (MY_MODEL_URL && MY_MODEL_URL.trim() !== '' && !isDefaultPath) {
                 try {
                     loader.load(
                         MY_MODEL_URL,
                         function (gltf) {
+                            // Se carregar com sucesso, removemos o Torus e colocamos o teu modelo
                             heroScene.remove(heroModel);
                             heroModel = gltf.scene;
                             
@@ -505,6 +512,7 @@
                             const center = box.getCenter(new THREE.Vector3());
                             const size = box.getSize(new THREE.Vector3());
                             
+                            // Centralização e ajuste de escala
                             heroModel.position.x += (heroModel.position.x - center.x);
                             heroModel.position.y += (heroModel.position.y - center.y);
                             heroModel.position.z += (heroModel.position.z - center.z);
@@ -517,12 +525,14 @@
                         },
                         undefined,
                         function (error) {
-                            console.warn('Ficheiro GLB não carregado. Fallback ativo.');
+                            console.warn('Ficheiro GLB não carregado: ' + MY_MODEL_URL + '. Geometria de fallback ativa.');
                         }
                     );
                 } catch (e) {
-                    console.error('Erro no loader:', e);
+                    console.error('Erro ao iniciar o loader:', e);
                 }
+            } else {
+                console.info('Modelo personalizado não configurado ou URL inválido. A usar objeto padrão.');
             }
         }
 
