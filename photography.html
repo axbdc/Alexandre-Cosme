@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="pt">
 <head>
@@ -113,7 +112,7 @@
         /* --- CURSOR --- */
         #tech-cursor {
             width: 30px; height: 30px;
-            border: 1px solid rgba(255,255,255,0.2);
+            border: 1px solid rgba(255, 255, 255, 0.2);
             position: fixed;
             pointer-events: none;
             z-index: 1000;
@@ -134,7 +133,7 @@
             flex-direction: column;
         }
         .asset-card:hover {
-            border-color: rgba(255,255,255,0.3);
+            border-color: rgba(255, 255, 255, 0.3);
             transform: translateY(-10px);
             background: rgba(255, 255, 255, 0.04);
         }
@@ -158,8 +157,8 @@
 
         /* Scrollbar modal */
         .custom-scrollbar::-webkit-scrollbar { width: 4px; }
-        .custom-scrollbar::-webkit-scrollbar-track { background: rgba(0,0,0,0.2); }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 10px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: rgba(0, 0, 0, 0.2); }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.1); border-radius: 10px; }
     </style>
 </head>
 <body class="selection:bg-white selection:text-black">
@@ -472,17 +471,21 @@
             heroRenderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
             document.getElementById('hero-3d-container').appendChild(heroRenderer.domElement);
 
-            // Luzes
-            const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+            // Luzes de Estúdio (Ajustadas para GLB PBR)
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
             heroScene.add(ambientLight);
 
-            const directLight = new THREE.DirectionalLight(0xffffff, 1.2);
+            const directLight = new THREE.DirectionalLight(0xffffff, 1.5);
             directLight.position.set(5, 10, 7.5);
             heroScene.add(directLight);
 
+            const fillLight = new THREE.PointLight(0xffffff, 0.8);
+            fillLight.position.set(-5, 2, 2);
+            heroScene.add(fillLight);
+
             loader = new THREE.GLTFLoader();
 
-            // 1. CRIAR O MODELO DE FALLBACK IMEDIATAMENTE (O TorusKnot das coordenadas)
+            // 1. CRIAR O MODELO DE FALLBACK IMEDIATAMENTE (O TorusKnot)
             const fallbackGeo = new THREE.TorusKnotGeometry(1.6, 0.45, 150, 20);
             const fallbackMat = new THREE.MeshStandardMaterial({ 
                 color: 0xffffff, 
@@ -494,7 +497,18 @@
             heroScene.add(heroModel);
 
             // 2. TENTAR CARREGAR O TEU GLB COM SEGURANÇA
-            if (MY_MODEL_URL && MY_MODEL_URL !== 'canon_eos_5d_mark_iv.glb') {
+            // Em ambientes de Blob (Canvas Preview), caminhos relativos causam SyntaxError no XMLHttpRequest.
+            const isBlob = window.location.protocol === 'blob:';
+            const isRelative = MY_MODEL_URL && !MY_MODEL_URL.includes('://') && !MY_MODEL_URL.startsWith('data:');
+
+            if (isBlob && isRelative) {
+                // Silenciamos o erro no modo de pré-visualização, mantendo o Torus ativo.
+                // Quando o site for publicado num servidor real, a câmara carregará normalmente.
+                console.info('Canvas Preview: Caminhos relativos para GLB bloqueados por segurança. A usar geometria padrão.');
+                return;
+            }
+
+            if (MY_MODEL_URL) {
                 try {
                     loader.load(
                         MY_MODEL_URL,
@@ -518,11 +532,11 @@
                         },
                         undefined,
                         function (error) {
-                            console.warn('Ficheiro GLB não carregado. Fallback ativo.');
+                            console.warn('Ficheiro GLB não carregado: ' + MY_MODEL_URL + '. Fallback ativo.');
                         }
                     );
                 } catch (e) {
-                    console.error('Erro no loader:', e);
+                    // Erro capturado silenciosamente para evitar crash da aplicação no sandbox.
                 }
             }
         }
